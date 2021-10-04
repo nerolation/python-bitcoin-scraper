@@ -191,7 +191,7 @@ class BtcGraph:
         
         _print("New BtcGraph initialized")
     
-    def addEdge(self, u, v):
+    def _addEdge(self, u, v):
         self.G.addEdge(u=u,v=v,addMissing=False)
 
     def _addNode(self, n):
@@ -200,7 +200,7 @@ class BtcGraph:
         self.V.add(n)
         return ix
     
-    def buildEdge(self, u, v):
+    def _buildEdge(self, u, v):
 
         # Inputs
         inputs  = [self._addNode(_u) if _u not in self.V else self.MAP_V[_u] for _u in u]
@@ -210,7 +210,7 @@ class BtcGraph:
 
         for i in inputs:
             for o in outputs:
-                self.addEdge(i,o)
+                self._addEdge(i,o)
     
             
     def update_mapping(self, node, idx):
@@ -265,7 +265,7 @@ class BtcGraph:
                                 Addrs_o = [addr for output in tx.outputs for addr in output.addresses]
                              
                                 # Build egde from ZERO to all Transaction output addresses
-                                self.buildEdge(["0000"], Addrs_o)
+                                self._buildEdge(["00"], Addrs_o)
 
                             # If possible to connect inputs -> prev. outputs
                             elif inp.transaction_hash in self.Utxos.keys():
@@ -278,7 +278,7 @@ class BtcGraph:
                                 Addrs_o = [addr for output in tx.outputs for addr in output.addresses]
                                         
                                 # Build edge
-                                self.buildEdge(Vin, Addrs_o)
+                                self._buildEdge(Vin, Addrs_o)
 
                                 # Clean MAP
                                 self.Utxos[inp.transaction_hash].pop(Vout)
@@ -331,12 +331,12 @@ class BtcGraph:
                     for inp in tx.inputs:
                         if inp.transaction_hash == "0" * 64:
                             Addrs_o = [addr for output in tx.outputs for addr in output.addresses]
-                            self.buildEdge(["0000"], Addrs_o)
+                            self._buildEdge(["00"], Addrs_o)
                         elif inp.transaction_hash in self.Utxos.keys():
                             Vout = inp.transaction_index
                             Vin = self.Utxos[inp.transaction_hash][Vout]
                             Addrs_o = [addr for output in tx.outputs for addr in output.addresses]
-                            self.buildEdge(Vin, Addrs_o)
+                            self._buildEdge(Vin, Addrs_o)
                             self.Utxos[inp.transaction_hash].pop(Vout)
                             if len(self.Utxos[inp.transaction_hash]) == 0:
                                 self.Utxos.pop(inp.transaction_hash)
@@ -359,6 +359,7 @@ class BtcGraph:
     def load_GraphComponents(self):
         self.G, self.V, self.Utxos, self.MAP_V, Meta = load_ALL()
         self.creationTime, self.lastBlTs, self.lastBlHash, self.lastTxHash, self.processedBl = Meta
+        return self.G, self.V, self.Utxos, self.MAP_V, Meta
     
     def stats(self):
         _print("Graph has {:>16,} nodes".format(self.G.numberOfNodes()))
