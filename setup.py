@@ -1,5 +1,5 @@
 from setuptools import setup, find_packages
-from blockchain_parser import __version__
+from bitcoin_graph import __version__
 
 
 setup(
