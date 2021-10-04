@@ -3,7 +3,7 @@ from blockchain_parser import __version__
 
 
 setup(
-    name='btc-graph',
+    name='bitcoin-graph',
     version=__version__,
     packages=find_packages(),
     url='https://github.com/Nerolation/bitcoin-graph',
