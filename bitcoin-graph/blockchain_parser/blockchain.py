@@ -109,9 +109,9 @@ class Blockchain(object):
         blk_files = get_files(self.path)
         l = len(blk_files)
         for blk_file in blk_files:
-            print(colored(f"{datetime.now().strftime('%H:%M:%S')}  -  Bock File # {file_number(blk_file)}/{l}", "green"))
+            print(colored(f"{datetime.now().strftime('%H:%M:%S')}  -  Block File # {file_number(blk_file)}/{l}", "green"))
             if logger != None:
-            	logger.log(f"{datetime.now().strftime('%H:%M:%S')}  -  Bock File # {file_number(blk_file)}/{l}")
+            	logger.log(f"{datetime.now().strftime('%H:%M:%S')}  -  Block File # {file_number(blk_file)}/{l}")
             if t0:
                 delta = (datetime.now()-t0).total_seconds()
                 if delta > 5:

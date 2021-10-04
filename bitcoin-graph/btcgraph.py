@@ -27,7 +27,7 @@ def _print(s):
         printing    
     except NameError:
         printing=True
-        _print("Printing"+colored("activated","green"))
+        _print("Printing "+colored("activated","green"))
     if printing:
         print(f"{datetime.now().strftime('%H:%M:%S')}  -  {s}")
     
@@ -120,7 +120,7 @@ def MAP_V_r(m):
 def print_memory_info():
     m = psutil.virtual_memory()
     process = psutil.Process(os.getpid())
-    col = "red" if m.total*0.75 < m.used else "grey"
+    col = "red" if m.total*0.75 < m.used else None
     _print(colored("---  -------   ----------------------------", col))
     _print(colored("--> {:>5,.1f} GB   total memory".format(m.total/1073741824), col))
     _print(colored("--> {:>5,.1f} GB   of memory available".format(m.available/1073741824), col))
@@ -196,7 +196,7 @@ class BtcGraph:
 
     def _addNode(self, n):
         ix = self.G.addNode()
-        self.update_mapping(n, ix)
+        self._update_mapping(n, ix)
         self.V.add(n)
         return ix
     
@@ -213,7 +213,7 @@ class BtcGraph:
                 self._addEdge(i,o)
     
             
-    def update_mapping(self, node, idx):
+    def _update_mapping(self, node, idx):
         self.MAP_V[node] = idx
         
     def finish_tasks(self):
