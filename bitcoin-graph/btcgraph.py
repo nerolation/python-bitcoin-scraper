@@ -9,11 +9,11 @@ import matplotlib.pyplot as plt
 import psutil
 
 from termcolor import colored
-from blockchain_parser.blockchain import Blockchain
 from datetime import datetime
 from networkit import *
 
-from input_heuristic import InputHeuristic
+from bitcoin_graph.blockchain_parser.blockchain import Blockchain
+from bitcoin_graph.input_heuristic import InputHeuristic
 
 now = datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -28,6 +28,7 @@ def _print(s):
     except NameError:
         printing=True
         _print("Printing "+colored("activated","green"))
+        time.sleep(0.5)
     if printing:
         print(f"{datetime.now().strftime('%H:%M:%S')}  -  {s}")
     
@@ -95,8 +96,10 @@ def load_rawEdges():
 
 def save_ALL(G,raw,V,Utxos,MAP_V,Meta):
     if not os.path.isdir('./output/'):
+        _print("Creating output folder...")
         os.makedirs('./output')
     if not os.path.isdir('./output/{}/'.format(now)):
+        _print("Creating output/{} folder...".format(now))
         os.makedirs('./output/{}/'.format(now))
     save_G(G, raw)
     save_V(V)
@@ -133,7 +136,6 @@ def print_memory_info():
     
  # Logger   
 class BlkLogger:
-    
     def __init__(self):
         if not os.path.isdir('logs/'):
             _print("Creating logs folder...")
@@ -190,6 +192,7 @@ class BtcGraph:
             self.end=datetime.fromtimestamp(int(self.end))
         
         _print("New BtcGraph initialized")
+        time.sleep(1)
     
     def _addEdge(self, u, v):
         self.G.addEdge(u=u,v=v,addMissing=False)
@@ -297,7 +300,7 @@ class BtcGraph:
                             _print("End Tx reached")
                             _print("Execution terminated")
                             sys.exit(1)
-
+                
                 if bc % 10000 == 0:
                     self.stats()
 
