@@ -1,3 +1,4 @@
+cmake==3.21.3                                                                                                                                                                       Cython==0.29.24 
 matplotlib==3.4.3
 networkit==9.0
 numpy==1.21.2
