@@ -115,9 +115,9 @@ class Blockchain(object):
             if t0:
                 delta = (datetime.now()-t0).total_seconds()
                 if delta > 5:
-                    print(f"{datetime.now().strftime('%H:%M:%S')}  -  File @ `{blk_file}` took {int(delta)} seconds", "green")
+                    print(f"{datetime.now().strftime('%H:%M:%S')}  -  File @ `{blk_file}` took {int(delta)} seconds")
                     loop_duration.append(delta)
-                    print(f"{datetime.now().strftime('%H:%M:%S')}  -  Average duration of {int(sum(loop_duration)/len(loop_duration))} seconds per .blk file", "green")
+                    print(f"{datetime.now().strftime('%H:%M:%S')}  -  Average duration of {int(sum(loop_duration)/len(loop_duration))} seconds per .blk file")
                     print(estimate_end(loop_duration, file_number(blk_file), l))
             t0 = datetime.now()
 
