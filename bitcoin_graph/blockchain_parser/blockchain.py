@@ -73,9 +73,9 @@ class Blockchain(object):
 
     def get_blk_files(self, sF, eF):
         blk_files = get_files(self.path)
-        blk_files = blk_files[blk_files.index(sF):]
+        blk_files = blk_files[blk_files.index(self.path + "/" + sF):]
         if eF:
-            blk_files = blk_files[:blk_files.index(eF)]
+            blk_files = blk_files[:blk_files.index(self.path + "/" + eF)]
         return blk_files
         
     def get_unordered_blocks(self, blk_file):
