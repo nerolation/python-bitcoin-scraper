@@ -67,12 +67,17 @@ def load_V():
     _print("Loading V...")
     return pickle.load(open("./output/{}/V.pkl".format(get_date()), "rb"))
 
-def save_G(G, raw=False):
+def save_G(G, _format):
     _print("Saving G...")
-    writeGraph(G,"./output/{}/G.graph".format(now), Format.NetworkitBinary, chunks=16, NetworkitBinaryWeights=0)
-    if raw:
+    if _format == "binary":
         _print("Saving raw G...")
+        writeGraph(G,"./output/{}/G.graph".format(now), Format.NetworkitBinary, chunks=16, NetworkitBinaryWeights=0)
+        if input("Additionally store graph in edge list format? (y/n)") != "n":
+            writeGraph(G,"./output/{}/G_raw.edges".format(now), Format.EdgeListSpaceZero)              
+    else:
         writeGraph(G,"./output/{}/G_raw.edges".format(now), Format.EdgeListSpaceZero)
+                 
+        
     
 def load_G():
     _print("Loading G...")
@@ -94,14 +99,14 @@ def load_rawEdges():
         yield list(chunk.to_records(index=False))
 
 
-def save_ALL(G,raw,V,Utxos,MAP_V,Meta):
+def save_ALL(G,_format,V,Utxos,MAP_V,Meta):
     if not os.path.isdir('./output/'):
         _print("Creating output folder...")
         os.makedirs('./output')
     if not os.path.isdir('./output/{}/'.format(now)):
         _print("Creating output/{} folder...".format(now))
         os.makedirs('./output/{}/'.format(now))
-    save_G(G, raw)
+    save_G(G, _format)
     save_V(V)
     save_Utxos(Utxos)
     save_MAP_V(MAP_V)
@@ -132,7 +137,31 @@ def print_memory_info():
     _print(colored("--> {:>5,.1f}  %   of memory used".format(m.percent), col))
     _print(colored("--> {:>5,.1f}  %   of memory available".format(100-m.percent), col))
     _print(colored("---  -------   ----------------------------", col))
-    
+                 
+
+def estimate_end(loopduration, curr_file, total_files):
+    avg_loop = int(sum(loopduration)/len(loopduration))
+    delta_files = total_files - curr_file
+    _estimate = datetime.fromtimestamp(datetime.now().timestamp() + delta_files * avg_loop)
+    return colored(f"{datetime.now().strftime('%H:%M:%S')}  -  Estimated end:  " +  _estimate.strftime("%d.%m  |  %H:%M:%S"), "green")
+
+def file_number(s):
+    match = re.search("([0-9]{5})", s).group()
+    if match == "00000":
+        return 0
+    else:
+        return int(match.lstrip("0"))    
+                 
+
+def show_delta_info(t0, loop_duration, blk_file):
+    delta = (datetime.now()-t0).total_seconds()
+    if delta > 5:
+        print(f"{datetime.now().strftime('%H:%M:%S')}  -  File @ `{blk_file}` took {int(delta)} seconds")
+        loop_duration.append(delta)
+        print(f"{datetime.now().strftime('%H:%M:%S')}  -  Average duration of {int(sum(loop_duration)/len(loop_duration))} seconds per .blk file")
+        print(estimate_end(loop_duration, file_number(blk_file), l))
+        return loop_duration
+                 
     
  # Logger   
 class BlkLogger:
@@ -140,6 +169,7 @@ class BlkLogger:
         if not os.path.isdir('logs/'):
             _print("Creating logs folder...")
             os.makedirs('logs')
+            
             
     def log(self, s):
         ts = datetime.now().strftime("%Y-%m-%d  |  %H:%M:%S ")
@@ -153,7 +183,7 @@ class BlkLogger:
 class BtcGraph:
     
     def __init__(self, G=None, V=None, Utxos=None, MAP_V=None, Meta=None,
-                 dl='~/.bitcoin/blocks', buildRaw=False, end=None,
+                 dl='~/.bitcoin/blocks', buildRaw=False, end=None, graphFormat="binary",
                  clusterInputs=False, iC=None
                 ):
         self.end          = end                 # Timestamp of last block
@@ -166,7 +196,8 @@ class BtcGraph:
         self.buildRaw     = buildRaw            # Bool value to decide whether to build list of raw edges
         self.communities  = None                # Communities placeholder
         self.logger       = BlkLogger()         # Logging Module
-               
+        self.graphFormat  = graphFormat         # Graph format 
+
         
         # Meta data
         self.processedBl  = Meta[4] if Meta else []   # List of processed blocks
@@ -219,14 +250,8 @@ class BtcGraph:
     def _update_mapping(self, node, idx):
         self.MAP_V[node] = idx
         
-    def finish_tasks(self):
-        self.stats()
-        _print("Saving components...")
-        self.save_GraphComponents()
-        _print("\nExecution finished")
-        _print(f"Took {int((datetime.now()-self.creationTime).total_seconds()/60)} minutes since graph creation")
-                
-    def build(self, sF=None, eF=None, sT=None, eT=None):
+      
+    def build(self, sF="blk00000.dat", eF=None, sT=None, eT=None):
         global now
         _print("Start building...")
         
@@ -236,73 +261,87 @@ class BtcGraph:
         blockchain = Blockchain(os.path.expanduser(self.dl))
         start = True if sT == None else False
         try:
-            for bc, block in enumerate(blockchain.get_unordered_blocks(customStart=sF, customEnd=eF, logger=self.logger)):
+            blk_files = blockchain.get_blk_files(sF, eF)
+            l = len(blk_files)
+            for blk_file in blk_files:
+                t0, loop_duration =  None, []
 
-                self.lastBlTs = block.header.timestamp
-                
-                if self.end:                     
-                    if self.lastBlTs > self.end:
-                        continue
+                    
+                print(colored(f"{datetime.now().strftime('%H:%M:%S')}  -  Block File # {file_number(blk_file)}/{l}", "green"))
+                logger.log(f"{datetime.now().strftime('%H:%M:%S')}  -  Block File # {file_number(blk_file)}/{l}")
+                 
+                if t0:
+                     loop_duration = show_delta_info(t0, loop_duration, blk_file)
+                t0 = datetime.now()
 
-                # Keep track of processed blocks
-                self.lastBlHash = block.hash
-                self.processedBl.append(block.hash)
-                self.processedBl = self.processedBl[-50:] # Fix size array of last blocks
-                
-                for tx in block.transactions:
-                    if start:
-                        
-                        # Handle Outputs
-                        outs={}
-                        for o_index, output in enumerate(tx.outputs):
-                            outs[o_index] = [address.address for address in output.addresses]
-                                
-                        self.Utxos[tx.hash] = outs
-                        
-                        # Handle Inputs
-                        for inp in tx.inputs:
-                            
-                            # Coinbase Txs
-                            if inp.transaction_hash == "0" * 64:
-                                # Outputs
-                                Addrs_o = [addr for output in tx.outputs for addr in output.addresses]
-                             
-                                # Build egde from ZERO to all Transaction output addresses
-                                self._buildEdge(["00"], Addrs_o)
+                print(f"\nProcessing {blk_file}")
+                for block in blockchain.get_unordered_blocks(blk_file, logger=self.logger):
 
-                            # If possible to connect inputs -> prev. outputs
-                            elif inp.transaction_hash in self.Utxos.keys():
+                    self.lastBlTs = block.header.timestamp
 
-                                # Inputs (Vin)
-                                Vout = inp.transaction_index
-                                Vin = self.Utxos[inp.transaction_hash][Vout]
+                    if self.end:                     
+                        if self.lastBlTs > self.end:
+                            continue
 
-                                # Outputs
-                                Addrs_o = [addr for output in tx.outputs for addr in output.addresses]
-                                        
-                                # Build edge
-                                self._buildEdge(Vin, Addrs_o)
+                    # Keep track of processed blocks
+                    self.lastBlHash = block.hash
+                    self.processedBl.append(block.hash)
+                    self.processedBl = self.processedBl[-50:] # Fix size array of last blocks
 
-                                # Clean MAP
-                                self.Utxos[inp.transaction_hash].pop(Vout)
-                                if len(self.Utxos[inp.transaction_hash]) == 0:
-                                    self.Utxos.pop(inp.transaction_hash)
-                            
-                    # Set `last-processed hash`
-                    self.lastTxHash = tx.hash
+                    for tx in block.transactions:
+                        if start:
 
-                    if start == False:
-                        start = True if (sT == None or sT == self.lastTxHash) else False
+                            # Handle Outputs
+                            outs={}
+                            for o_index, output in enumerate(tx.outputs):
+                                outs[o_index] = [address.address for address in output.addresses]
 
-                    if eT != None and start == True:
-                        start = False if eT == self.lastTxHash else True
+                            self.Utxos[tx.hash] = outs
+
+                            # Handle Inputs
+                            for inp in tx.inputs:
+
+                                # Coinbase Txs
+                                if inp.transaction_hash == "0" * 64:
+                                    # Outputs
+                                    Addrs_o = [addr for output in tx.outputs for addr in output.addresses]
+
+                                    # Build egde from ZERO to all Transaction output addresses
+                                    self._buildEdge(["00"], Addrs_o)
+
+                                # If possible to connect inputs -> prev. outputs
+                                elif inp.transaction_hash in self.Utxos.keys():
+
+                                    # Inputs (Vin)
+                                    Vout = inp.transaction_index
+                                    Vin = self.Utxos[inp.transaction_hash][Vout]
+
+                                    # Outputs
+                                    Addrs_o = [addr for output in tx.outputs for addr in output.addresses]
+
+                                    # Build edge
+                                    self._buildEdge(Vin, Addrs_o)
+
+                                    # Clean MAP
+                                    self.Utxos[inp.transaction_hash].pop(Vout)
+                                    if len(self.Utxos[inp.transaction_hash]) == 0:
+                                        self.Utxos.pop(inp.transaction_hash)
+
+                        # Set `last-processed hash`
+                        self.lastTxHash = tx.hash
+
                         if start == False:
-                            _print("End Tx reached")
-                            _print("Execution terminated")
-                            sys.exit(1)
-                
-                if bc % 10000 == 0:
-                    self.stats()
+                            start = True if (sT == None or sT == self.lastTxHash) else False
+
+                        if eT != None and start == True:
+                            start = False if eT == self.lastTxHash else True
+                            if start == False:
+                                _print("End Tx reached")
+                                _print("Execution terminated")
+                                sys.exit(1)
+
+
+                self.stats()
 
             self.finish_tasks()
             return self
@@ -316,48 +355,19 @@ class BtcGraph:
             self.logger.log("System exit...")
             self.finish_tasks()
             return self 
+     
         
-    def speed_build(self):
-        global now
-        # Instantiate the Blockchain by giving the path to the directory
-        # containing the .blk files created by bitcoind
-        now = datetime.now().strftime("%Y%m%d_%H%M%S")
-        blockchain = Blockchain(os.path.expanduser(self.dl))
-        try:
-            for block in blockchain.get_unordered_blocks(customStart=None, customEnd=None, logger=self.logger):
-
-                for tx in block.transactions:
-                    outs={}
-                    for o_index, output in enumerate(tx.outputs):
-                        outs[o_index] = [address.address for address in output.addresses]
-                    self.Utxos[tx.hash] = outs
-                    for inp in tx.inputs:
-                        if inp.transaction_hash == "0" * 64:
-                            Addrs_o = [addr for output in tx.outputs for addr in output.addresses]
-                            self._buildEdge(["00"], Addrs_o)
-                        elif inp.transaction_hash in self.Utxos.keys():
-                            Vout = inp.transaction_index
-                            Vin = self.Utxos[inp.transaction_hash][Vout]
-                            Addrs_o = [addr for output in tx.outputs for addr in output.addresses]
-                            self._buildEdge(Vin, Addrs_o)
-                            self.Utxos[inp.transaction_hash].pop(Vout)
-                            if len(self.Utxos[inp.transaction_hash]) == 0:
-                                self.Utxos.pop(inp.transaction_hash)
-
-            self.finish_tasks()
-            return self
-        
-        except KeyboardInterrupt:
-            self.finish_tasks()
-            return self
-        
-        except SystemExit:
-            self.finish_tasks()
-            return self              
-
+    def finish_tasks(self):
+        self.stats()
+        _print("Saving components...")
+        self.save_GraphComponents()
+        _print("\nExecution finished")
+        _print(f"Took {int((datetime.now()-self.creationTime).total_seconds()/60)} minutes since graph creation")
+              
+    
     def save_GraphComponents(self):
         meta = [self.creationTime, self.lastBlTs, self.lastBlHash, self.lastTxHash, self.processedBl]
-        save_ALL(self.G, self.buildRaw, self.V, self.Utxos, self.MAP_V, meta)
+        save_ALL(self.G, self._format, self.V, self.Utxos, self.MAP_V, meta)
         
     def load_GraphComponents(self):
         self.G, self.V, self.Utxos, self.MAP_V, Meta = load_ALL()
