@@ -21,15 +21,10 @@ now = datetime.now().strftime("%Y%m%d_%H%M%S")
 # Helpers
 #
 
-def _print(s):
-    global printing
-    try:
-        printing    
-    except NameError:
-        printing=True
-        _print("Printing "+colored("activated","green"))
-        time.sleep(0.5)
-    if printing:
+def _print(s, printing=True):
+    if not printing:
+        return
+    else:
         print(f"{datetime.now().strftime('%H:%M:%S')}  -  {s}")
     
 def get_date(folder="./output"):
@@ -76,8 +71,7 @@ def save_G(G, _format):
             writeGraph(G,"./output/{}/G_raw.edges".format(now), Format.EdgeListSpaceZero)              
     else:
         writeGraph(G,"./output/{}/G_raw.edges".format(now), Format.EdgeListSpaceZero)
-                 
-        
+ 
     
 def load_G():
     _print("Loading G...")
@@ -91,8 +85,16 @@ def load_Meta():
     _print("Loading Metadata...")
     return pickle.load(open("./output/{}/Metadata.meta".format(get_date()), "rb"))
 
-def load_rawEdges():
-    _print("Loading rawEdges...")
+def save_Raw_Edges(rE, blkfile):
+    print("Saving raw edges...")
+    if not os.path.isdir('./output/{}/rawedges/'.format(now)):
+        os.makedirs('./output/{}/rawedges'.format(now))
+    with open("./output/{}/rawedges/raw_blk_{}.csv".format(now, blkfile),"w",newline="") as f:
+        cw = csv.writer(f,delimiter=",")
+        cw.writerows(rE)
+
+def load_edge_list():
+    _print("Loading edge list...")
     for chunk in pd.read_csv("./output/{}/G_raw.G".format(get_date()), 
                              header=None, chunksize=1e6):
         _print("more ...")
@@ -182,25 +184,26 @@ class BlkLogger:
 
 class BtcGraph:
     
-    def __init__(self, G=None, V=None, Utxos=None, MAP_V=None, Meta=None,
-                 dl='~/.bitcoin/blocks', buildRaw=False, end=None, graphFormat="binary",
-                 clusterInputs=False, iC=None
+    def __init__(self, G=None, V=None, Utxos=None, MAP_V=None, Raw_Edges=None, Meta=None,
+                 dl='~/.bitcoin/blocks', buildRawEdges=False, endTS=None, graphFormat="binary",
+                 printing=True,clusterInputs=False, iC=None
                 ):
-        self.end          = end                 # Timestamp of last block
+        self.endTS        = endTS               # Timestamp of last block
         self.dl           = dl                  # Data location where blk files are stored
         self.G            = G or graph.Graph(n=0,directed=True) # NetworKit Graph
         self.V            = V or set()          # Set of vertices/nodes of Bitcoin Addresses
         self.Utxos        = Utxos or {}         # Mapping of Tx Hash => Utxo Indices => Output Addresses
         self.MAP_V        = MAP_V or {}         # Mapping of Bitcoin Addresses => Indices (NetworKit Integers)
         self.MAP_V_r      = MAP_V_r(self.MAP_V) # Reversed MAP_V mapping
-        self.buildRaw     = buildRaw            # Bool value to decide whether to build list of raw edges
+        self.buildRawEdges= buildRawEdges       # Bool value to decide whether to build ONLY a list of raw edges 
+        self.Raw_Edges    = Raw_Edges           # Raw Edges
         self.communities  = None                # Communities placeholder
         self.logger       = BlkLogger()         # Logging Module
         self.graphFormat  = graphFormat         # Graph format 
+        self.printing     = printing            # Bool to turn on/off printing
 
         
         # Meta data
-        self.processedBl  = Meta[4] if Meta else []   # List of processed blocks
         self.lastTxHash   = Meta[3] if Meta else None # Last Tx Hash processed
         self.lastBlHash   = Meta[2] if Meta else None # Last Block Hash processed
         self.lastBlTs     = Meta[1] if Meta else None # Last Timestamp of block processed
@@ -213,20 +216,30 @@ class BtcGraph:
         # Placehoder for undirected copy of G
         if self.G.isDirected():
             self._G = None
+        
+        # Add communities to object (if Graph exists already)
         try:
             self.communities = community.detectCommunities(_G, algo=community.PLM(_G, True))
         except:
             pass
         
         # Timestamp to datetime object
-        if self.end:
-            self.end=datetime.fromtimestamp(int(self.end))
+        if self.endTS:
+            self.endTS=datetime.fromtimestamp(int(self.endTS))
+            
+        if printing:
+            _print("Printing "+colored("activated","green")) 
+        else:
+            _print("Printing "+colored("deactivated","red"))
         
         _print("New BtcGraph initialized")
         time.sleep(1)
     
     def _addEdge(self, u, v):
-        self.G.addEdge(u=u,v=v,addMissing=False)
+        if self.buildRawEdges:
+            # do
+        else:
+            self.G.addEdge(u=u,v=v,addMissing=False)
 
     def _addNode(self, n):
         ix = self.G.addNode()
@@ -250,47 +263,59 @@ class BtcGraph:
     def _update_mapping(self, node, idx):
         self.MAP_V[node] = idx
         
-      
-    def build(self, sF="blk00000.dat", eF=None, sT=None, eT=None):
+    # Build Graph
+    # Arguments: start-file sF, end-file eF, start-Tx sT, end-Tx eT
+    def build(self, sF, eF, sT, eT): 
         global now
         _print("Start building...")
-        
-        # Instantiate the Blockchain by giving the path to the directory
-        # containing the .blk files created by bitcoind
-        now = datetime.now().strftime("%Y%m%d_%H%M%S")
-        blockchain = Blockchain(os.path.expanduser(self.dl))
-        start = True if sT == None else False
         try:
+            # Instantiate the Blockchain by giving the path to the directory
+            # containing the .blk files created by bitcoind
+            now = datetime.now().strftime("%Y%m%d_%H%M%S")
+            blockchain = Blockchain(os.path.expanduser(self.dl))
+            
+            # Set start to True if no Start transaction is provided
+            start = True if sT == None else False
+            
+            # Receive list of .blk files
             blk_files = blockchain.get_blk_files(sF, eF)
-            l = len(blk_files)
+            
+            # l = number of .blk files
+            # t0 = time iteration beginns
+            # loop_duration = list of delta times of iterations
+            l, t0, loop_duration = len(blk_files), None, []
+            
+            # Loop through all .blk files
             for blk_file in blk_files:
-                t0, loop_duration =  None, []
-
-                    
-                print(colored(f"{datetime.now().strftime('%H:%M:%S')}  -  Block File # {file_number(blk_file)}/{l}", "green"))
-                logger.log(f"{datetime.now().strftime('%H:%M:%S')}  -  Block File # {file_number(blk_file)}/{l}")
-                 
+                assert(len(self.RawEdges) == 0)
+                
+                fn = file_number(blk_file)
+                
+                # Log progress
+                print(colored(f"{datetime.now().strftime('%H:%M:%S')}  -  Block File # {fn}/{l}", "green"))
+                logger.log(f"{datetime.now().strftime('%H:%M:%S')}  -  Block File # {fn}/{l}")
+                
+                # Show loop duration after first iteration
                 if t0:
                      loop_duration = show_delta_info(t0, loop_duration, blk_file)
                 t0 = datetime.now()
 
                 print(f"\nProcessing {blk_file}")
-                for block in blockchain.get_unordered_blocks(blk_file, logger=self.logger):
+                for block in blockchain.get_unordered_blocks(blk_file):
 
+                    # Skip blocks younger than specified `end timestamp`
                     self.lastBlTs = block.header.timestamp
-
-                    if self.end:                     
-                        if self.lastBlTs > self.end:
+                    if self.endTS:                     
+                        if self.lastBlTs > self.endTS:
                             continue
 
                     # Keep track of processed blocks
                     self.lastBlHash = block.hash
                     self.processedBl.append(block.hash)
-                    self.processedBl = self.processedBl[-50:] # Fix size array of last blocks
 
                     for tx in block.transactions:
                         if start:
-
+                            
                             # Handle Outputs
                             outs={}
                             for o_index, output in enumerate(tx.outputs):
@@ -329,10 +354,12 @@ class BtcGraph:
 
                         # Set `last-processed hash`
                         self.lastTxHash = tx.hash
-
+                        
+                        # Try to start if start-transaction sT is reached
                         if start == False:
                             start = True if (sT == None or sT == self.lastTxHash) else False
-
+                            
+                        # Try to stop execution afer last-transaction-hash is reached
                         if eT != None and start == True:
                             start = False if eT == self.lastTxHash else True
                             if start == False:
@@ -340,10 +367,16 @@ class BtcGraph:
                                 _print("Execution terminated")
                                 sys.exit(1)
 
-
+                # Print stats after each .blk file
                 self.stats()
-
-            self.finish_tasks()
+                if buildRawEdges:
+                    save_Raw_Edges(self.Raw_Edges, fn)
+                    # Reset list of raw edges
+                    self.Raw_Edges = []
+                    
+            # Finish execution    
+            if not buildRawEdges:
+                self.finish_tasks()
             return self
         
         except KeyboardInterrupt:
@@ -366,18 +399,27 @@ class BtcGraph:
               
     
     def save_GraphComponents(self):
-        meta = [self.creationTime, self.lastBlTs, self.lastBlHash, self.lastTxHash, self.processedBl]
+        meta = [self.creationTime, self.lastBlTs, self.lastBlHash, self.lastTxHash]
         save_ALL(self.G, self._format, self.V, self.Utxos, self.MAP_V, meta)
         
     def load_GraphComponents(self):
-        self.G, self.V, self.Utxos, self.MAP_V, Meta = load_ALL()
-        self.creationTime, self.lastBlTs, self.lastBlHash, self.lastTxHash, self.processedBl = Meta
-        return self.G, self.V, self.Utxos, self.MAP_V, Meta
+        self.creationTime, self.lastBlTs, self.lastBlHash, self.lastTxHash = Meta
+        if buildRawEdges:
+            self.Raw_Edges = load_edge_list()
+            return self.Raw_Edges
+        else:
+            self.G, self.V, self.Utxos, self.MAP_V, Meta = load_ALL()
+            return self.G, self.V, self.Utxos, self.MAP_V, Meta
+        
     
     def stats(self):
-        _print("Graph has {:>16,} nodes".format(self.G.numberOfNodes()))
-        _print("Graph has {:>16,} edges".format(self.G.numberOfEdges()))
-        graphSize = sys.getsizeof(self.V)+sys.getsizeof(self.MAP_V)
+        if buildRawEdges:
+            graphSize = sys.getsizeof(self.Raw_Edges)+sys.getsizeof(self.Utxos)
+        else:
+            _print("Graph has {:>16,} nodes".format(self.G.numberOfNodes()))
+            _print("Graph has {:>16,} edges".format(self.G.numberOfEdges()))
+            graphSize = sys.getsizeof(self.V)+sys.getsizeof(self.MAP_V)+sys.getsizeof(self.Utxos)
+            
         _print("Graph has {:>16,.0f} bytes".format(graphSize))
         _print("Graph has {:>16,.0f} mb".format((graphSize)/1048576))
         print_memory_info()
