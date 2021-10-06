@@ -13,10 +13,7 @@ import os
 import mmap
 import struct
 import stat
-import re
 
-from datetime import datetime
-from termcolor import colored
 from .block import Block
 
 
@@ -62,28 +59,7 @@ def get_blocks(blockfile):
             else:
                 offset += 1
         raw_data.close()
-
-
-def get_block(blockfile, offset):
-    """Extracts a single block from the blockfile at the given offset"""
-    with open(blockfile, "rb") as f:
-        f.seek(offset - 4)  # Size is present 4 bytes before the db offset
-        size, = struct.unpack("<I", f.read(4))
-        return f.read(size)
-    
-def file_number(s):
-    match = re.search("([0-9]{5})", s).group()
-    if match == "00000":
-        return 0
-    else:
-        return int(match.lstrip("0"))
-
-def estimate_end(loopduration, curr_file, total_files):
-    avg_loop = int(sum(loopduration)/len(loopduration))
-    delta_files = total_files - curr_file
-    _estimate = datetime.fromtimestamp(datetime.now().timestamp() + delta_files * avg_loop)
-    return colored(f"{datetime.now().strftime('%H:%M:%S')}  -  Estimated end:  " +  _estimate.strftime("%d.%m  |  %H:%M:%S"), "green")
-
+        
 
 class Blockchain(object):
     """Represents the blockchain contained in the series of .blk files
@@ -102,10 +78,9 @@ class Blockchain(object):
             blk_files = blk_files[:blk_files.index(eF)]
         return blk_files
         
-    def get_unordered_blocks(self, blk_file, logger=None):
-        """Yields the blocks contained in the .blk files as is,
+    def get_unordered_blocks(self, blk_file):
+        """Yields the blocks contained in a .blk file as is,
         without ordering them according to height.
         """
-
         for raw_block in get_blocks(blk_file):
             yield Block(raw_block)
