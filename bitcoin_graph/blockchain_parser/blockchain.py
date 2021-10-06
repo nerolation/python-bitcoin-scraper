@@ -95,38 +95,17 @@ class Blockchain(object):
         self.blockIndexes = None
         self.indexPath = None
 
-    def get_unordered_blocks(self, customStart=None, customEnd=None, logger=None):
+    def get_blk_files(self, sF, eF):
+        blk_files = get_files(self.path)
+        blk_files = blk_files[blk_files.index(sF):]
+        if eF:
+            blk_files = blk_files[:blk_files.index(eF)]
+        return blk_files
+        
+    def get_unordered_blocks(self, blk_file, logger=None):
         """Yields the blocks contained in the .blk files as is,
         without ordering them according to height.
         """
-        start = True
-        t0 = None
-        loop_duration = []
-        
-        if customStart:
-            start=False
-            
-        blk_files = get_files(self.path)
-        l = len(blk_files)
-        for blk_file in blk_files:
-            print(colored(f"{datetime.now().strftime('%H:%M:%S')}  -  Block File # {file_number(blk_file)}/{l}", "green"))
-            if logger != None:
-            	logger.log(f"{datetime.now().strftime('%H:%M:%S')}  -  Block File # {file_number(blk_file)}/{l}")
-            if t0:
-                delta = (datetime.now()-t0).total_seconds()
-                if delta > 5:
-                    print(f"{datetime.now().strftime('%H:%M:%S')}  -  File @ `{blk_file}` took {int(delta)} seconds")
-                    loop_duration.append(delta)
-                    print(f"{datetime.now().strftime('%H:%M:%S')}  -  Average duration of {int(sum(loop_duration)/len(loop_duration))} seconds per .blk file")
-                    print(estimate_end(loop_duration, file_number(blk_file), l))
-            t0 = datetime.now()
 
-            if str(customStart) in blk_file:
-                start=True
-            if str(customEnd) in blk_file:
-                start=False
-
-            if start:
-                print(f"\nProcessing {blk_file}")
-                for raw_block in get_blocks(blk_file):
-                    yield Block(raw_block)
+        for raw_block in get_blocks(blk_file):
+            yield Block(raw_block)
