@@ -12,7 +12,7 @@ parser.add_argument('-et', '--endtx', default=None)
 parser.add_argument('-ets', '--endtimestamp', default=None)
 parser.add_argument('-loc', '--blklocation', default="~/.bitcoin/blocks")
 parser.add_argument('-f', '--format', default="binary")
-parser.add_argument('-raw', '--rawedges', default=False)
+parser.add_argument('-raw', '--rawedges', default=None)
 parser.add_argument('-p', '--printing', default=True)
 
 # Handle parameters
@@ -20,7 +20,6 @@ _args = parser.parse_args()
 
 # Print some env info
 starting_info(vars(_args))
-
 
 # Static variables
 startFile = _args.startfile
@@ -38,8 +37,8 @@ printing  = _args.printing
 # Initialize Btc graph object
 # `blk_loc` for the location where the blk files are stored
 # `raw Edges` to additionally save graph in EdgeList format
-btc_graph = BtcGraph(dl=blk_loc, endTS=endTS, graphFormat=_format, buildRaw=rawEdges, printing=printing)
+btc_graph = BtcGraph(dl=blk_loc, endTS=endTS, graphFormat=_format, buildRawEdges=rawEdges, printing=printing)
 
 # Start building graph
 btc_graph.build(startFile,endFile,startTx,endTx)
-print("Execution finished")
+print("-----------------------------------------")
