@@ -9,9 +9,13 @@ __cwd__     = os.path.abspath(os.getcwd())
 
 def starting_info(args):
     print(f"Starting btc graph version {__version__} with the following arguments:")
-    print("{:<18}{:<13}".format("current wd:", __cwd__))
     if str(args["rawedges"]) not in ["False", "None", "0"]:
         args["format"] = colored("deactivated", "red")
+    if str(args["withts"]) not in ["False", "None", "0"] and str(args["rawedges"]) in ["False", "None", "0"]:
+        print(colored("`Withts` argument has no affect because collecting raw Edges is deactivated", "red"))
+        args["withts"] = colored("deactivated", "red")
+        time.sleep(2)
+    print("{:<18}{:<13}".format("current wd:", __cwd__))
     for k, v in zip(args.keys(), args.values()):
         if (v and k not in ["startfile","blklocation","format"]):
             v = colored("activated", "green")

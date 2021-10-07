@@ -87,11 +87,16 @@ def load_Meta():
 
 def save_Raw_Edges(rE, blkfile):
     _print("Saving raw edges...")
+    _print("raw_blk_{}.csv contains {:,} edges".format(blkfile, len(rE)))
+    t_0 = datetime.fromtimestamp(int(rE[0][0])).strftime("%d.%m.%Y")
+    t_1 = datetime.fromtimestamp(int(rE[-1][0])).strftime("%d.%m.%Y")
+    _print("raw_blk_{}.csv ranges from {} to {}".format(blkfile, t_0, t_1))
     if not os.path.isdir('./output/{}/rawedges/'.format(now)):
         os.makedirs('./output/{}/rawedges'.format(now))
     with open("./output/{}/rawedges/raw_blk_{}.csv".format(now, blkfile),"w",newline="") as f:
         cw = csv.writer(f,delimiter=",")
         cw.writerows(rE)
+    _print("Saving successful")
 
 def load_edge_list():
     _print("Loading edge list...")
@@ -185,8 +190,8 @@ class BlkLogger:
 class BtcGraph:
     
     def __init__(self, G=None, V=None, Utxos=None, MAP_V=None, Raw_Edges=None, Meta=None,
-                 dl='~/.bitcoin/blocks', buildRawEdges=False, endTS=None, graphFormat="binary",
-                 printing=True,clusterInputs=False, iC=None
+                 dl='~/.bitcoin/blocks', buildRawEdges=False, withTS=None, endTS=None, 
+                 graphFormat="binary", clusterInputs=False, iC=None
                 ):
         self.endTS        = endTS               # Timestamp of last block
         self.dl           = dl                  # Data location where blk files are stored
@@ -196,17 +201,18 @@ class BtcGraph:
         self.MAP_V        = MAP_V or {}         # Mapping of Bitcoin Addresses => Indices (NetworKit Integers)
         self.MAP_V_r      = MAP_V_r(self.MAP_V) # Reversed MAP_V mapping
         self.buildRawEdges= buildRawEdges       # Bool value to decide whether to build ONLY a list of raw edges 
+        self.withTS       = withTS              # Bool value to decide whether timestamps are collected
         self.Raw_Edges    = Raw_Edges or []     # Raw Edges
         self.communities  = None                # Communities placeholder
         self.logger       = BlkLogger()         # Logging Module
         self.graphFormat  = graphFormat         # Graph format 
-        self.printing     = printing            # Bool to turn on/off printing
 
         
         # Meta data
         self.lastTxHash   = Meta[3] if Meta else None # Last Tx Hash processed
         self.lastBlHash   = Meta[2] if Meta else None # Last Block Hash processed
-        self.lastBlTs     = Meta[1] if Meta else None # Last Timestamp of block processed
+        self.lastBlTs     = Meta[1] if Meta else None # Last Timestamp object of block processed
+        self.lastBlTs_s   = int(self.lastBlTs.timestamp()) if Meta else None # Last Timestamp
         self.creationTime = Meta[0] if Meta else datetime.now() # Creation time of `this`
 
         # Heuristic 1
@@ -243,7 +249,10 @@ class BtcGraph:
         if self.buildRawEdges:
             for _u in u:
                 for _v in v:
-                    self.Raw_Edges.append((_u, _v))
+                    if self.withTS:
+                        self.Raw_Edges.append((self.lastBlTs_s,_u, _v))
+                    else:
+                        self.Raw_Edges.append((_u, _v))
             return
 
         else:
@@ -305,7 +314,8 @@ class BtcGraph:
                 for block in blockchain.get_unordered_blocks(blk_file):
 
                     # Skip blocks younger than specified `end timestamp`
-                    self.lastBlTs = block.header.timestamp
+                    self.lastBlTs   = block.header.timestamp
+                    self.lastBlTs_s = int(self.lastBlTs.timestamp())
                     if self.endTS:                     
                         if self.lastBlTs > self.endTS:
                             continue
@@ -382,12 +392,14 @@ class BtcGraph:
         
         except KeyboardInterrupt:
             self.logger.log("Keyboard interrupt...")
-            self.finish_tasks()
+            if not self.buildRawEdges:
+                self.finish_tasks()
             return self
         
         except SystemExit:
             self.logger.log("System exit...")
-            self.finish_tasks()
+            if not self.buildRawEdges:
+                self.finish_tasks()
             return self 
      
         
