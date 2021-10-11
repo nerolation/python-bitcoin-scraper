@@ -15,7 +15,6 @@ from networkit import *
 from bitcoin_graph.blockchain_parser.blockchain import Blockchain
 from bitcoin_graph.input_heuristic import InputHeuristic
 
-now = datetime.now().strftime("%Y%m%d_%H%M%S")
 
 #
 # Helpers
