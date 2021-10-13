@@ -93,13 +93,13 @@ def save_Raw_Edges(rE, blkfile, uploader=None):
         t_0 = datetime.fromtimestamp(int(rE[0][0])).strftime("%d.%m.%Y")
         t_1 = datetime.fromtimestamp(int(rE[-1][0])).strftime("%d.%m.%Y")
         if uploader:
-            _print("data ranges from {} to {}".format(t_0, t_1))
+            _print("Data ranges from {} to {}".format(t_0, t_1))
         else:
              _print("raw_blk_{}.csv ranges from {} to {}".format(blkfile, t_0, t_1))
     
     # Direct upload to Google BigQuery without local copy
     if uploader:
-        _print("batch contains {:,} edges".format(blkfile, len(rE)))
+        _print("Batch contains {:,} edges".format(len(rE)))
         uploader.upload_data(rE)
         _print("Upload successful")
     
@@ -165,7 +165,7 @@ def estimate_end(loopduration, curr_file, total_files):
     avg_loop = int(sum(loopduration)/len(loopduration))
     delta_files = total_files - curr_file
     _estimate = datetime.fromtimestamp(datetime.now().timestamp() + delta_files * avg_loop)
-    return colored(f"{datetime.now().strftime('%H:%M:%S')}  -  Estimated end:  " +  _estimate.strftime("%d.%m  |  %H:%M:%S"), "green")
+    return colored("Estimated end:  " +  _estimate.strftime("%d.%m  |  %H:%M:%S"), "green")
 
 def file_number(s):
     match = re.search("([0-9]{5})", s).group()
@@ -178,10 +178,10 @@ def file_number(s):
 def show_delta_info(t0, loop_duration, blk_file, l):
     delta = (datetime.now()-t0).total_seconds()
     if delta > 5:
-        print(f"{datetime.now().strftime('%H:%M:%S')}  -  File @ `{blk_file}` took {int(delta)} seconds")
+        _print(f"File @ `{blk_file}` took {int(delta)} seconds")
         loop_duration.append(delta)
-        print(f"{datetime.now().strftime('%H:%M:%S')}  -  Average duration of {int(sum(loop_duration)/len(loop_duration))} seconds per .blk file")
-        print(estimate_end(loop_duration, file_number(blk_file), l))
+        _print(f"Average duration of {int(sum(loop_duration)/len(loop_duration))} seconds per .blk file")
+        _print(estimate_end(loop_duration, file_number(blk_file), l))
         return loop_duration
                  
     
