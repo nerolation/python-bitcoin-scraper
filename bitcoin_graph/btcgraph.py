@@ -87,22 +87,25 @@ def load_Meta():
 
 def save_Raw_Edges(rE, blkfile, uploader=None):
     _print("Saving raw edges...")
-    _print("raw_blk_{}.csv contains {:,} edges".format(blkfile, len(rE)))
     
     # If edges contain timestamp
     if len(rE[0]) == 3:
         t_0 = datetime.fromtimestamp(int(rE[0][0])).strftime("%d.%m.%Y")
         t_1 = datetime.fromtimestamp(int(rE[-1][0])).strftime("%d.%m.%Y")
+        if uploader:
+            _print("data ranges from {} to {}".format(t_0, t_1))
+        else:
+             _print("raw_blk_{}.csv ranges from {} to {}".format(blkfile, t_0, t_1))
     
     # Direct upload to Google BigQuery without local copy
     if uploader:
-        _print("data ranges from {} to {}".format(blkfile, t_0, t_1))
+        _print("batch contains {:,} edges".format(blkfile, len(rE)))
         uploader.upload_data(rE)
         _print("Upload successful")
     
     # Store locally
     else:
-        _print("raw_blk_{}.csv ranges from {} to {}".format(blkfile, t_0, t_1))
+        _print("raw_blk_{}.csv contains {:,} edges".format(blkfile, len(rE)))
         if not os.path.isdir('./output/{}/rawedges/'.format(now)):
             os.makedirs('./output/{}/rawedges'.format(now))
         with open("./output/{}/rawedges/raw_blk_{}.csv".format(now, blkfile),"w",newline="") as f:
