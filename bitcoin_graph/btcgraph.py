@@ -321,7 +321,7 @@ class BtcGraph:
                 
                 # Log progress
                 _print(colored(f"Block File # {fn}/{l}", "green"))
-                self.logger.log(f"Block File # {fn}/{l}"
+                self.logger.log(f"Block File # {fn}/{l}")
 
                 _print(f"Processing {blk_file}")
                 for block in blockchain.get_unordered_blocks(blk_file):
