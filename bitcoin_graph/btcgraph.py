@@ -86,8 +86,6 @@ def load_Meta():
     return pickle.load(open("./output/{}/Metadata.meta".format(get_date()), "rb"))
 
 def save_Raw_Edges(rE, blkfile, uploader=None):
-    _print("Saving raw edges...")
-    
     # If edges contain timestamp
     if len(rE[0]) == 3:
         t_0 = datetime.fromtimestamp(int(rE[0][0])).strftime("%d.%m.%Y")
@@ -105,6 +103,7 @@ def save_Raw_Edges(rE, blkfile, uploader=None):
     
     # Store locally
     else:
+        _print("Saving raw edges...")
         _print("raw_blk_{}.csv contains {:,} edges".format(blkfile, len(rE)))
         if not os.path.isdir('./output/{}/rawedges/'.format(now)):
             os.makedirs('./output/{}/rawedges'.format(now))
