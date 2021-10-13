@@ -31,9 +31,13 @@ class bqUpLoader():
         self.credentials = credentials or [".gcpkey/"+fn for fn in os.listdir(".gcpkey") if fn.endswith(".json")][0]
         os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = self.credentials
         self.client    = bigquery.Client()
-        self.path      = path or "output/{}/rawedges".format(get_date())
         self.table_id  = table_id or "btc"
         self.dataset   = dataset or "bitcoin_transactions"
+        
+        try:
+            self.path  = path or "output/{}/rawedges".format(get_date())
+        except:
+            pass
     
     
     def upload_data(self, data=None):
