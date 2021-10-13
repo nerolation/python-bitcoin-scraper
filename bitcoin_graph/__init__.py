@@ -29,7 +29,7 @@ def starting_info(args):
             time.sleep(2)
         print("{:<18}{:<13}".format("current wd:", __cwd__))
         for k, v in zip(args.keys(), args.values()):
-            if (v and k not in ["startfile","blklocation","format"]):
+            if (v and k not in ["startfile","blklocation","format","rawedges"]):
                 v = colored("activated", "green")
             elif k not in ["startfile","blklocation","format"]:
                 v = colored("deactivated", "red")

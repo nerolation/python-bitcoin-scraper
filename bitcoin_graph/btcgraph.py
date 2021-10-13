@@ -85,7 +85,7 @@ def load_Meta():
     _print("Loading Metadata...")
     return pickle.load(open("./output/{}/Metadata.meta".format(get_date()), "rb"))
 
-def save_Raw_Edges(rE, blkfile, uploader=None):
+def save_Raw_Edges(rE, blkfile, location=None, uploader=None):
     # If edges contain timestamp
     if len(rE[0]) == 3:
         t_0 = datetime.fromtimestamp(int(rE[0][0])).strftime("%d.%m.%Y")
@@ -105,9 +105,11 @@ def save_Raw_Edges(rE, blkfile, uploader=None):
     else:
         _print("Saving raw edges...")
         _print("raw_blk_{}.csv contains {:,} edges".format(blkfile, len(rE)))
-        if not os.path.isdir('./output/{}/rawedges/'.format(now)):
-            os.makedirs('./output/{}/rawedges'.format(now))
-        with open("./output/{}/rawedges/raw_blk_{}.csv".format(now, blkfile),"w",newline="") as f:
+        if not os.path.isdir('{}/output'.format(location)):
+            os.makedirs('{}/output'.format(location))
+        if not os.path.isdir('{}/output/{}/rawedges/'.format(location,now)):
+            os.makedirs('{}/output/{}/rawedges'.format(location,now))
+        with open("{}/output/{}/rawedges/raw_blk_{}.csv".format(location, now, blkfile),"w",newline="") as f:
             cw = csv.writer(f,delimiter=",")
             cw.writerows(rE)
         _print("Saving successful")
@@ -214,7 +216,7 @@ class BtcGraph:
         self.Utxos        = Utxos or {}         # Mapping of Tx Hash => Utxo Indices => Output Addresses
         self.MAP_V        = MAP_V or {}         # Mapping of Bitcoin Addresses => Indices (NetworKit Integers)
         self.MAP_V_r      = MAP_V_r(self.MAP_V) # Reversed MAP_V mapping
-        self.buildRawEdges= buildRawEdges       # Bool value to decide whether to build ONLY a list of raw edges 
+        self.buildRawEdges= buildRawEdges       # Path to store a list of raw edges 
         self.withTS       = withTS              # Bool value to decide whether timestamps are collected
         self.Raw_Edges    = Raw_Edges or []     # Raw Edges
         self.communities  = None                # Communities placeholder
@@ -401,9 +403,9 @@ class BtcGraph:
                 if self.buildRawEdges:
                     if self.upload:
                         _print("Start uploading ...")
-                        save_Raw_Edges(self.Raw_Edges, fn, self.uploader)
+                        save_Raw_Edges(self.Raw_Edges, fn, uploader=self.uploader)
                     else:
-                        save_Raw_Edges(self.Raw_Edges, fn)
+                        save_Raw_Edges(self.Raw_Edges, fn, location=self.buildRawEdges)
                     # Reset list of raw edges
                     self.Raw_Edges = []
                     
