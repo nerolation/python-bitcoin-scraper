@@ -5,7 +5,7 @@ from networkit import *
 import argparse
 import time
 
-parser = argparse.ArgumentParser(formatter_class=lambda prog: argparse.HelpFormatter(prog,max_help_position=48))
+parser = argparse.ArgumentParser(formatter_class=lambda prog: argparse.HelpFormatter(prog,max_help_position=80))
 parser.add_argument('-sf', '--startfile', help=".blk start file - default: blk00000.dat", default="blk00000.dat")
 parser.add_argument('-ef', '--endfile', help=".blk end file (excluded) - default: None", default=None)
 parser.add_argument('-st', '--starttx', help="start transaction - default: None", default=None)
@@ -13,7 +13,7 @@ parser.add_argument('-et', '--endtx', help="end transaction - default: None", de
 parser.add_argument('-ets', '--endts', help="end timestamp of block - default: None", default=None)
 parser.add_argument('-loc', '--blklocation', help=".blk file location - default: ~/.bitcoin/blocks", default="~/.bitcoin/blocks")
 parser.add_argument('-f', '--format', help="networkit storage format (binary|edgelist) - default: binary", default="binary")
-parser.add_argument('-raw', '--rawedges', help="only build list of edges - default: No", default=None)
+parser.add_argument('-raw', '--rawedges', help="path to store raw edges - default: No", default=None)
 parser.add_argument('-wts', '--withts', help="collect list of edges with timestamps - default: No", default=None)
 parser.add_argument('-gbq', '--googlebigquery', help="upload edges to google bigquery - default: False", default=None)
 parser.add_argument('-up', '--directupload', help="upload edges directly(!) to google bigquery - default: False", default=None)
