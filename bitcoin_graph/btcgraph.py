@@ -321,12 +321,7 @@ class BtcGraph:
                 
                 # Log progress
                 _print(colored(f"Block File # {fn}/{l}", "green"))
-                self.logger.log(f"Block File # {fn}/{l}")
-                
-                # Show loop duration after first iteration
-                if t0:
-                     loop_duration = show_delta_info(t0, loop_duration, blk_file, l)
-                t0 = datetime.now()
+                self.logger.log(f"Block File # {fn}/{l}"
 
                 _print(f"Processing {blk_file}")
                 for block in blockchain.get_unordered_blocks(blk_file):
@@ -396,6 +391,12 @@ class BtcGraph:
                                 sys.exit(1)
 
                 _print(f"File #{fn} finished")
+                                
+                # Show loop duration after first iteration
+                if t0:
+                     loop_duration = show_delta_info(t0, loop_duration, blk_file, l)
+                t0 = datetime.now()      
+                                
                 # Print stats after each .blk file
                 self.stats()
                 if self.buildRawEdges:
