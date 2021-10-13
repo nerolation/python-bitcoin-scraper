@@ -36,19 +36,27 @@ class bqUpLoader():
         self.dataset   = dataset or "bitcoin_transactions"
     
     
-    def upload_data(self):
-        files = get_csv_files(self.path)
-        r = len(files)
-        
-        # fresh printing output
-        p = lambda x: "\r[" + "#" * x + (r - x) * " " + "]"
-        
-        # loop over raw edges files
-        for i, blkfile in enumerate(files):
-            df = pd.read_csv(blkfile, names=["ts", "from", "to"])
-            #df.to_gbq(self.table_id+"."+self.dataset, if_exists="append", chunksize=int(1e7))
-            time.sleep(2)
-            sys.stdout.write("\r\r{:<18} successfully uploaded   \n".format(blkfile.split("/")[-1]))            
-            sys.stdout.write(p(i+1))
-            time.sleep(0.1)
-        print()
+    def upload_data(self, data=None):
+        try:
+            if data:
+                df = pd.DataFrame(data, columns=["ts", "from", "to"])
+                df.to_gbq(self.table_id+"."+self.dataset, if_exists="append", chunksize=int(1e7))
+            else:
+                files = get_csv_files(self.path)
+                r = len(files)
+
+                # fresh printing output
+                p = lambda x: "\r[" + "#" * x + (r - x) * " " + "]"
+
+                # loop over raw edges files
+                for i, blkfile in enumerate(files):
+                    df = pd.read_csv(blkfile, names=["ts", "from", "to"])
+                    #df.to_gbq(self.table_id+"."+self.dataset, if_exists="append", chunksize=int(1e7))
+                    time.sleep(2)
+                    sys.stdout.write("\r\r{:<18} successfully uploaded   \n".format(blkfile.split("/")[-1]))            
+                    sys.stdout.write(p(i+1))
+                    time.sleep(0.1)
+                print()
+        except KeyboardInterrupt:
+            print("Upload skiped ...")
+           

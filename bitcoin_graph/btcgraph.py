@@ -14,8 +14,8 @@ from networkit import *
 
 from bitcoin_graph.blockchain_parser.blockchain import Blockchain
 from bitcoin_graph.input_heuristic import InputHeuristic
+from bitcoin_graph.bquploader import bqUpLoader
 
-now = datetime.now().strftime("%Y%m%d_%H%M%S")
 
 #
 # Helpers
@@ -85,18 +85,30 @@ def load_Meta():
     _print("Loading Metadata...")
     return pickle.load(open("./output/{}/Metadata.meta".format(get_date()), "rb"))
 
-def save_Raw_Edges(rE, blkfile):
+def save_Raw_Edges(rE, blkfile, uploader=None):
     _print("Saving raw edges...")
     _print("raw_blk_{}.csv contains {:,} edges".format(blkfile, len(rE)))
-    t_0 = datetime.fromtimestamp(int(rE[0][0])).strftime("%d.%m.%Y")
-    t_1 = datetime.fromtimestamp(int(rE[-1][0])).strftime("%d.%m.%Y")
-    _print("raw_blk_{}.csv ranges from {} to {}".format(blkfile, t_0, t_1))
-    if not os.path.isdir('./output/{}/rawedges/'.format(now)):
-        os.makedirs('./output/{}/rawedges'.format(now))
-    with open("./output/{}/rawedges/raw_blk_{}.csv".format(now, blkfile),"w",newline="") as f:
-        cw = csv.writer(f,delimiter=",")
-        cw.writerows(rE)
-    _print("Saving successful")
+    
+    # If edges contain timestamp
+    if len(rE[0]) == 3:
+        t_0 = datetime.fromtimestamp(int(rE[0][0])).strftime("%d.%m.%Y")
+        t_1 = datetime.fromtimestamp(int(rE[-1][0])).strftime("%d.%m.%Y")
+    
+    # Direct upload to Google BigQuery without local copy
+    if uploader:
+        _print("data ranges from {} to {}".format(blkfile, t_0, t_1))
+        uploader.upload_data(rE)
+        _print("Upload successful")
+    
+    # Store locally
+    else:
+        _print("raw_blk_{}.csv ranges from {} to {}".format(blkfile, t_0, t_1))
+        if not os.path.isdir('./output/{}/rawedges/'.format(now)):
+            os.makedirs('./output/{}/rawedges'.format(now))
+        with open("./output/{}/rawedges/raw_blk_{}.csv".format(now, blkfile),"w",newline="") as f:
+            cw = csv.writer(f,delimiter=",")
+            cw.writerows(rE)
+        _print("Saving successful")
 
 def load_edge_list():
     _print("Loading edge list...")
@@ -191,7 +203,7 @@ class BtcGraph:
     
     def __init__(self, G=None, V=None, Utxos=None, MAP_V=None, Raw_Edges=None, Meta=None,
                  dl='~/.bitcoin/blocks', buildRawEdges=False, withTS=None, endTS=None, 
-                 graphFormat="binary", clusterInputs=False, iC=None
+                 graphFormat="binary", upload=False, clusterInputs=False, iC=None
                 ):
         self.endTS        = endTS               # Timestamp of last block
         self.dl           = dl                  # Data location where blk files are stored
@@ -204,8 +216,11 @@ class BtcGraph:
         self.withTS       = withTS              # Bool value to decide whether timestamps are collected
         self.Raw_Edges    = Raw_Edges or []     # Raw Edges
         self.communities  = None                # Communities placeholder
-        self.logger       = BlkLogger()         # Logging Module
+        self.logger       = BlkLogger()         # Logging module
         self.graphFormat  = graphFormat         # Graph format 
+        self.upload       = upload              # Bool to directly upload to GCP
+        if self.upload:
+            self.uploader     = bqUpLoader()    # BigQuery uploader
 
         
         # Meta data
@@ -377,10 +392,15 @@ class BtcGraph:
                                 _print("Execution terminated")
                                 sys.exit(1)
 
+                _print(f"File #{fn} finished")
                 # Print stats after each .blk file
                 self.stats()
                 if self.buildRawEdges:
-                    save_Raw_Edges(self.Raw_Edges, fn)
+                    if self.upload:
+                        _print("Start uploading ...")
+                        save_Raw_Edges(self.Raw_Edges, fn, self.uploader)
+                    else:
+                        save_Raw_Edges(self.Raw_Edges, fn)
                     # Reset list of raw edges
                     self.Raw_Edges = []
                     
@@ -426,13 +446,14 @@ class BtcGraph:
     def stats(self):
         if self.buildRawEdges:
             graphSize = sys.getsizeof(self.Raw_Edges)+sys.getsizeof(self.Utxos)
+            _print("Edge list has {:>16,.0f} bytes".format(graphSize))
+            _print("Edge list has {:>16,.0f} mb".format((graphSize)/1048576))
         else:
             _print("Graph has {:>16,} nodes".format(self.G.numberOfNodes()))
             _print("Graph has {:>16,} edges".format(self.G.numberOfEdges()))
             graphSize = sys.getsizeof(self.V)+sys.getsizeof(self.MAP_V)+sys.getsizeof(self.Utxos)
-            
-        _print("Graph has {:>16,.0f} bytes".format(graphSize))
-        _print("Graph has {:>16,.0f} mb".format((graphSize)/1048576))
+            _print("Graph has {:>16,.0f} bytes".format(graphSize))
+            _print("Graph has {:>16,.0f} mb".format((graphSize)/1048576))
         print_memory_info()
         
         
