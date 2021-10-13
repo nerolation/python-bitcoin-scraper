@@ -14,8 +14,9 @@ parser.add_argument('-ets', '--endts', help="end timestamp of block - default: N
 parser.add_argument('-loc', '--blklocation', help=".blk file location - default: ~/.bitcoin/blocks", default="~/.bitcoin/blocks")
 parser.add_argument('-f', '--format', help="networkit storage format (binary|edgelist) - default: binary", default="binary")
 parser.add_argument('-raw', '--rawedges', help="only build list of edges - default: No", default=None)
-parser.add_argument('-wt', '--withts', help="collect list of edges with timestamps - default: No", default=None)
-parser.add_argument('-gbq', '--googlebigquery', help="upload edges to google big query - default: False", default=None)
+parser.add_argument('-wts', '--withts', help="collect list of edges with timestamps - default: No", default=None)
+parser.add_argument('-gbq', '--googlebigquery', help="upload edges to google bigquery - default: False", default=None)
+parser.add_argument('-up', '--directupload', help="upload edges directly(!) to google bigquery - default: False", default=None)
 
 # Handle parameters
 _args = parser.parse_args()
@@ -34,13 +35,14 @@ _format   = _args.format
 rawEdges  = _args.rawedges
 withTS    = _args.withts
 gbq       = _args.googlebigquery
+upload    = _args.directupload
 # -----------------------------------------------
 
 if not gbq:
     # Initialize btc graph object
     # `blk_loc` for the location where the blk files are stored
     # `raw Edges` to additionally save graph in edgeList format
-    btc_graph = BtcGraph(dl=blk_loc, endTS=endTS, graphFormat=_format, buildRawEdges=rawEdges, withTS=withTS)
+    btc_graph = BtcGraph(dl=blk_loc, endTS=endTS, graphFormat=_format, buildRawEdges=rawEdges, withTS=withTS, upload=upload)
 
     # Start building graph
     btc_graph.build(startFile,endFile,startTx,endTx)
