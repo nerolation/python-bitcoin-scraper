@@ -407,7 +407,7 @@ class BtcGraph:
                                 _print("Execution terminated")
                                 sys.exit(1)
 
-                _print(f"File # {fn} finished")
+                _print(f"File # {fn} successfully parsed")
                                 
                 # Print stats after each .blk file
                 self.stats()
@@ -427,8 +427,9 @@ class BtcGraph:
                 # Must be the first iteration
                 else:
                     loop_duration = show_delta_info(self.creationTime, loop_duration, blk_file, l)
-                
-                t0 = datetime.now()      
+                  
+                t0 = datetime.now()
+                 _print(f"File # {fn} finished")
                     
             # Finish execution 
             self.finish_tasks()
