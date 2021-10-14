@@ -7,6 +7,7 @@ from termcolor import colored
 __version__ = "0.1.0"
 __cwd__     = os.path.abspath(os.getcwd())
 
+# print current configuration into console
 def starting_info(args):
     
     # if google big query upload
@@ -31,15 +32,17 @@ def starting_info(args):
         for k, v in zip(args.keys(), args.values()):
             if (v and k not in ["startfile","blklocation","format","rawedges"]):
                 v = colored("activated", "green")
-            elif k not in ["startfile","blklocation","format"]:
+            elif k not in ["startfile","blklocation","format", "rawedges"]:
+                v = colored("deactivated", "red")
+            elif str(v) == "None":
                 v = colored("deactivated", "red")
             print("{:<18}{:<13}".format(k+":", str(v)))
-    r = 40
-    p = lambda x: "\r[" + "#" * x + (r - x) * " " + "]"
-    print("\nInitializing...")
-    for i in range(r):
-        sys.stdout.write(p(i+1))
-        time.sleep(0.01)
+
+    for i in range(2):
+        for i in ["|", "/", "-", "\\"]:
+            sys.stdout.write("\rInitializing... "+i)
+            time.sleep(0.3)
+    sys.stdout.write("\rInitializing...   ")
     print("\n")
           
     

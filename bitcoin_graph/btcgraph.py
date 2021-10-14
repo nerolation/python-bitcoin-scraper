@@ -103,8 +103,8 @@ def save_Raw_Edges(rE, blkfile, location=None, uploader=None):
     
     # Store locally
     else:
+        _print("File @ raw_blk_{}.csv contains {:,} edges".format(blkfile, len(rE)))
         _print("Saving raw edges...")
-        _print("raw_blk_{}.csv contains {:,} edges".format(blkfile, len(rE)))
         if not os.path.isdir('{}/output'.format(location)):
             os.makedirs('{}/output'.format(location))
         if not os.path.isdir('{}/output/{}/rawedges/'.format(location,now)):

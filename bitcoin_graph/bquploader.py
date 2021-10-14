@@ -28,11 +28,11 @@ class bqUpLoader():
     def __init__(self, credentials=None, path=None, table_id=None, dataset=None):
         
         # put google credentials into .gcpkey folder
-        self.credentials = credentials or [".gcpkey/"+fn for fn in os.listdir(".gcpkey") if fn.endswith(".json")][0]
+        self.credentials = credentials
         os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = self.credentials
         self.client    = bigquery.Client()
-        self.table_id  = table_id or "btc"
-        self.dataset   = dataset or "bitcoin_transactions"
+        self.table_id  = table_id
+        self.dataset   = dataset 
         
         try:
             self.path  = path or "output/{}/rawedges".format(get_date())
@@ -44,7 +44,7 @@ class bqUpLoader():
         try:
             if data:
                 df = pd.DataFrame(data, columns=["ts", "from", "to"])
-                df.to_gbq(self.table_id+"."+self.dataset, if_exists="append", chunksize=int(1e7))
+                df.to_gbq(self.table_id+"."+self.dataset, if_exists="append", chunksize=int(1e8))
             else:
                 files = get_csv_files(self.path)
                 r = len(files)
@@ -55,7 +55,7 @@ class bqUpLoader():
                 # loop over raw edges files
                 for i, blkfile in enumerate(files):
                     df = pd.read_csv(blkfile, names=["ts", "from", "to"])
-                    #df.to_gbq(self.table_id+"."+self.dataset, if_exists="append", chunksize=int(1e7))
+                    df.to_gbq(self.table_id+"."+self.dataset, if_exists="append", chunksize=int(1e8))
                     time.sleep(2)
                     sys.stdout.write("\r\r{:<18} successfully uploaded   \n".format(blkfile.split("/")[-1]))            
                     sys.stdout.write(p(i+1))
