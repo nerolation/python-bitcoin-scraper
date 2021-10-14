@@ -35,10 +35,10 @@ def save_Utxos(Utxos):
         writer = csv.writer(f)
         writer.writerows(Utxos.items())
 
-def load_Utxos():
+def load_Utxos(path='./output/{}/Utxos.csv'.format(get_date()):
     _print("Loading Utxos...")
-    with open('./output/{}/Utxos.csv'.format(get_date()), 'r') as f:  
-        return {a:b for a,b in csv.reader(f)}
+    with open(path), 'r') as f:  
+        return {a:eval(b) for a,b in csv.reader(f)}
     
 def save_MAP_V(MAP_V):
     _print("Saving MAP_V...")
@@ -258,6 +258,10 @@ class BtcGraph:
         if self.endTS:
             self.endTS=datetime.fromtimestamp(int(self.endTS))
         
+        # Load existing Utxos mapping if path was specified
+        if self.Utxos:
+            self.Utxos = load_Utxos(self.Utxos)
+        
         _print("New BtcGraph initialized")
         time.sleep(1)
     
@@ -421,28 +425,28 @@ class BtcGraph:
                     self.Raw_Edges = []
                     
             # Finish execution 
-            if not self.buildRawEdges:
-                self.finish_tasks()
+            self.finish_tasks()
             _print("Execution finished")
             return self
         
         except KeyboardInterrupt:
             self.logger.log("Keyboard interrupt...")
-            if not self.buildRawEdges:
-                self.finish_tasks()
+            self.finish_tasks()
             return self
         
         except SystemExit:
             self.logger.log("System exit...")
-            if not self.buildRawEdges:
-                self.finish_tasks()
+            self.finish_tasks()
             return self 
      
         
     def finish_tasks(self):
-        self.save_GraphComponents()
-        _print(f"Took {int((datetime.now()-self.creationTime).total_seconds()/60)} minutes since graph creation")
-              
+        if self.buildRawEdges:
+            save_Utxos(self.Utxos)
+        else:
+            self.save_GraphComponents()
+            _print(f"Took {int((datetime.now()-self.creationTime).total_seconds()/60)} minutes since graph creation")
+
     
     def save_GraphComponents(self):
         _print("Saving components...")
