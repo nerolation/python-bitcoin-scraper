@@ -42,8 +42,9 @@ class InputHeuristic:
             self.clusterLookUp[i] = self.clusterIndex
         self.clusterIndex += 1
         self.knownNodes.update(inputlist)
+        return self.clusterIndex - 1
 
-
+    # Provide array with input addresses
     def handle_inputs(self, inputs):
         #print()
         #print(f"processing {str(i)}")
@@ -62,6 +63,9 @@ class InputHeuristic:
                 c = n[0]
 
             self._inputs_to_cluster(inputs, c)
-
+             
         else:
-            self._create_entry(inputs)
+            c = self._create_entry(inputs)
+        
+        # Return Cluster Index of input array
+        return c
