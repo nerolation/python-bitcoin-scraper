@@ -16,7 +16,7 @@ parser.add_argument('-et', '--endtx', help="end transaction - default: None", de
 parser.add_argument('-ets', '--endts', help="end timestamp of block - default: None", default=None)
 parser.add_argument('-loc', '--blklocation', help=".blk|.csv file location - default: ~/.bitcoin/blocks", default="~/.bitcoin/blocks")
 parser.add_argument('-f', '--format', help="networkit storage format (binary|edgelist) - default: binary", default="binary")
-parser.add_argument('-utxo', '--uxtos', help="path to existing Utxos file - default: None", default="None")
+parser.add_argument('-utxo', '--utxos', help="path to existing Utxos file - default: None", default=None)
 
 # Raw edge-list
 parser.add_argument('-raw', '--rawedges', help="path to store raw edges - default: None", default=None)
