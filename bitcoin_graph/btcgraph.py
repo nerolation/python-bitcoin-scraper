@@ -93,7 +93,7 @@ def save_Raw_Edges(rE, blkfile, location=None, uploader=None):
         if uploader:
             _print("Data ranges from {} to {}".format(t_0, t_1))
         else:
-             _print("raw_blk_{}.csv ranges from {} to {}".format(blkfile, t_0, t_1))
+             _print("File @ raw_blk_{}.csv ranges from {} to {}".format(blkfile, t_0, t_1))
     
     # Direct upload to Google BigQuery without local copy
     if uploader:
@@ -166,7 +166,7 @@ def estimate_end(loopduration, curr_file, total_files):
     avg_loop = int(sum(loopduration)/len(loopduration))
     delta_files = total_files - curr_file
     _estimate = datetime.fromtimestamp(datetime.now().timestamp() + delta_files * avg_loop)
-    return colored("Estimated end:  " +  _estimate.strftime("%d.%m  |  %H:%M:%S"), "green")
+    return "Estimated end:  " +  _estimate.strftime("%d.%m  |  %H:%M:%S")
 
 def file_number(s):
     match = re.search("([0-9]{5})", s).group()
@@ -207,7 +207,8 @@ class BtcGraph:
     
     def __init__(self, G=None, V=None, Utxos=None, MAP_V=None, Raw_Edges=None, Meta=None,
                  dl='~/.bitcoin/blocks', buildRawEdges=False, withTS=None, endTS=None, 
-                 graphFormat="binary", upload=False, clusterInputs=False, iC=None
+                 graphFormat="binary", upload=False, credentials=None, table_id=None, dataset=None,
+                 clusterInputs=False, iC=None
                 ):
         self.endTS        = endTS               # Timestamp of last block
         self.dl           = dl                  # Data location where blk files are stored
@@ -224,8 +225,13 @@ class BtcGraph:
         self.graphFormat  = graphFormat         # Graph format 
         self.upload       = upload              # Bool to directly upload to GCP
         if self.upload:
-            self.uploader     = bqUpLoader()    # BigQuery uploader
-
+            self.creds    = credentials     # Path to google credentials json
+            self.table_id = table_id        # GBQ table id
+            self.dataset  = dataset         # GBQ data set name
+            self.uploader = bqUpLoader(credentials=self.creds,
+                                       table_id=self.table_id,
+                                       dataset=self.dataset)    # BigQuery uploader
+            
         
         # Meta data
         self.lastTxHash   = Meta[3] if Meta else None # Last Tx Hash processed
@@ -396,6 +402,11 @@ class BtcGraph:
                 # Show loop duration after first iteration
                 if t0:
                      loop_duration = show_delta_info(t0, loop_duration, blk_file, l)
+                        
+                # Must be the first iteration
+                else:
+                    loop_duration = show_delta_info(self.creationTime, loop_duration, blk_file, l)
+                
                 t0 = datetime.now()      
                                 
                 # Print stats after each .blk file
@@ -451,8 +462,8 @@ class BtcGraph:
     def stats(self):
         if self.buildRawEdges:
             graphSize = sys.getsizeof(self.Raw_Edges)+sys.getsizeof(self.Utxos)
-            _print("Edge list has {:>16,.0f} bytes".format(graphSize))
-            _print("Edge list has {:>16,.0f} mb".format((graphSize)/1048576))
+            _print("Edge list and Utxo mapping have {:>16,.0f} bytes".format(graphSize))
+            _print("Edge list and Utxo mapping have {:>16,.0f} mb".format((graphSize)/1048576))
         else:
             _print("Graph has {:>16,} nodes".format(self.G.numberOfNodes()))
             _print("Graph has {:>16,} edges".format(self.G.numberOfEdges()))

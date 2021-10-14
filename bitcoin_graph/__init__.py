@@ -28,14 +28,21 @@ def starting_info(args):
             print(colored("`Withts` argument has no affect because collecting raw Edges is deactivated", "red"))
             args["withts"] = colored("deactivated", "red")
             time.sleep(2)
+        if str(args["directupload"]) in ["False", "None", "0"]:
+            args["credentials"] = colored("deactivated", "red")
+            args["tableid"] = colored("deactivated", "red")
+            args["dataset"] = colored("deactivated", "red")
+            
         print("{:<18}{:<13}".format("current wd:", __cwd__))
         for k, v in zip(args.keys(), args.values()):
-            if (v and k not in ["startfile","blklocation","format","rawedges"]):
+            if (v and k not in ["startfile","blklocation","format","rawedges","credentials","tableid","dataset"]):
                 v = colored("activated", "green")
-            elif k not in ["startfile","blklocation","format", "rawedges"]:
+            elif k not in ["startfile","blklocation","format", "rawedges","credentials","tableid","dataset"]:
                 v = colored("deactivated", "red")
             elif str(v) == "None":
                 v = colored("deactivated", "red")
+            elif str(v) in ["True", "1"]:
+                v = colored("activated", "green")
             print("{:<18}{:<13}".format(k+":", str(v)))
 
     for i in range(2):
