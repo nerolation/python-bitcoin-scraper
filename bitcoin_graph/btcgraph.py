@@ -407,17 +407,7 @@ class BtcGraph:
                                 _print("Execution terminated")
                                 sys.exit(1)
 
-                _print(f"File #{fn} finished")
-                                
-                # Show loop duration after first iteration
-                if t0:
-                     loop_duration = show_delta_info(t0, loop_duration, blk_file, l)
-                        
-                # Must be the first iteration
-                else:
-                    loop_duration = show_delta_info(self.creationTime, loop_duration, blk_file, l)
-                
-                t0 = datetime.now()      
+                _print(f"File # {fn} finished")
                                 
                 # Print stats after each .blk file
                 self.stats()
@@ -429,6 +419,16 @@ class BtcGraph:
                         save_Raw_Edges(self.Raw_Edges, fn, location=self.buildRawEdges)
                     # Reset list of raw edges
                     self.Raw_Edges = []
+                    
+                # Show loop duration after first iteration
+                if t0:
+                     loop_duration = show_delta_info(t0, loop_duration, blk_file, l)
+                        
+                # Must be the first iteration
+                else:
+                    loop_duration = show_delta_info(self.creationTime, loop_duration, blk_file, l)
+                
+                t0 = datetime.now()      
                     
             # Finish execution 
             self.finish_tasks()
