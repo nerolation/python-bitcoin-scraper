@@ -25,19 +25,23 @@ def _print(s):
     print(f"{datetime.now().strftime('%H:%M:%S')}  -  {s}")
     
 def get_date(folder="./output"):
-    content = [fn for fn in os.listdir(folder)]
-    dates = [datetime.strptime(fn, "%Y%m%d_%H%M%S") for fn in content]
-    return dates[dates.index(max(dates))].strftime("%Y%m%d_%H%M%S")
+    try:
+        content = [fn for fn in os.listdir(folder)]
+        dates = [datetime.strptime(fn, "%Y%m%d_%H%M%S") for fn in content]
+        return dates[dates.index(max(dates))].strftime("%Y%m%d_%H%M%S")
+    except:
+        return 0
 
 def save_Utxos(Utxos):
+    check_folders()
     _print("Saving Utxos...")
     with open('./output/{}/Utxos.csv'.format(now), 'w') as f:  
         writer = csv.writer(f)
         writer.writerows(Utxos.items())
 
-def load_Utxos(path='./output/{}/Utxos.csv'.format(get_date())):
+def load_Utxos(path='./output/{}/'.format(get_date())):
     _print("Loading Utxos...")
-    with open(path, 'r') as f:  
+    with open(path + "/Utxos.csv", 'r') as f:  
         return {a:eval(b) for a,b in csv.reader(f)}
     
 def save_MAP_V(MAP_V):
@@ -121,14 +125,16 @@ def load_edge_list():
         _print("more ...")
         yield list(chunk.to_records(index=False))
 
-
-def save_ALL(G,graphFormat,V,Utxos,MAP_V,Meta):
+def check_folders():
     if not os.path.isdir('./output/'):
         _print("Creating output folder...")
         os.makedirs('./output')
     if not os.path.isdir('./output/{}/'.format(now)):
         _print("Creating output/{} folder...".format(now))
         os.makedirs('./output/{}/'.format(now))
+        
+def save_ALL(G,graphFormat,V,Utxos,MAP_V,Meta):
+    check_folders()
     save_G(G, graphFormat)
     save_V(V)
     save_Utxos(Utxos)
