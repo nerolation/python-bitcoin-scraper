@@ -35,9 +35,9 @@ def save_Utxos(Utxos):
         writer = csv.writer(f)
         writer.writerows(Utxos.items())
 
-def load_Utxos(path='./output/{}/Utxos.csv'.format(get_date()):
+def load_Utxos(path='./output/{}/Utxos.csv'.format(get_date())):
     _print("Loading Utxos...")
-    with open(path), 'r') as f:  
+    with open(path, 'r') as f:  
         return {a:eval(b) for a,b in csv.reader(f)}
     
 def save_MAP_V(MAP_V):
