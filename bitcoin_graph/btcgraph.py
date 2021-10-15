@@ -375,14 +375,14 @@ class BtcGraph:
                                     self._buildEdge(["00"], Addrs_o)
 
                                 # If possible to connect inputs -> prev. outputs
-                                elif inp.transaction_hash in self.Utxos.keys():
+                                elif inp.transaction_hash in self.Utxos:
 
                                     # Inputs (Vin)
                                     Vout = inp.transaction_index
                                     Vin = self.Utxos[inp.transaction_hash][Vout]
 
                                     # Outputs
-                                    Addrs_o = [addr.address  for output in tx.outputs for addr in output.addresses]
+                                    Addrs_o = [addr.address for output in tx.outputs for addr in output.addresses]
 
                                     # Build edge
                                     self._buildEdge(Vin, Addrs_o)
