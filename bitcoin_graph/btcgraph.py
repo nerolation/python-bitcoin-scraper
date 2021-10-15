@@ -388,10 +388,10 @@ class BtcGraph:
                                     self._buildEdge(Vin, Addrs_o)
 
                                     # Clean MAP
-                                    self.Utxos[inp.transaction_hash].pop(Vout)
+                                    del self.Utxos[inp.transaction_hash][Vout]
                                     if len(self.Utxos[inp.transaction_hash]) == 0:
-                                        self.Utxos.pop(inp.transaction_hash)
-
+                                        del self.Utxos[inp.transaction_hash]
+              
                         # Set `last-processed hash`
                         self.lastTxHash = tx.hash
                         
@@ -408,6 +408,9 @@ class BtcGraph:
                                 sys.exit(1)
 
                 _print(f"File # {fn} successfully parsed")
+                
+                # Free memory
+                self.Utxos = dict(self.Utxos)
                                 
                 # Print stats after each .blk file
                 self.stats()
@@ -429,7 +432,7 @@ class BtcGraph:
                     loop_duration = show_delta_info(self.creationTime, loop_duration, blk_file, l)
                   
                 t0 = datetime.now()
-                 _print(f"File # {fn} finished")
+                _print(f"File # {fn} finished")
                     
             # Finish execution 
             self.finish_tasks()
