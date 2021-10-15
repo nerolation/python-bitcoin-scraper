@@ -231,9 +231,9 @@ class BtcGraph:
         self.graphFormat  = graphFormat         # Graph format 
         self.upload       = upload              # Bool to directly upload to GCP
         if self.upload:
-            self.creds    = credentials     # Path to google credentials json
-            self.table_id = table_id        # GBQ table id
-            self.dataset  = dataset         # GBQ data set name
+            self.creds    = credentials         # Path to google credentials json
+            self.table_id = table_id            # GBQ table id
+            self.dataset  = dataset             # GBQ data set name
             self.uploader = bqUpLoader(credentials=self.creds,
                                        table_id=self.table_id,
                                        dataset=self.dataset)    # BigQuery uploader
