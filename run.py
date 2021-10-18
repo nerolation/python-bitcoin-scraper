@@ -17,6 +17,8 @@ parser.add_argument('-ets', '--endts', help="end timestamp of block - default: N
 parser.add_argument('-loc', '--blklocation', help=".blk|.csv file location - default: ~/.bitcoin/blocks", default="~/.bitcoin/blocks")
 parser.add_argument('-f', '--format', help="networkit storage format (binary|edgelist) - default: binary", default="binary")
 parser.add_argument('-utxo', '--utxos', help="path to existing Utxos file - default: None", default=None)
+parser.add_argument('-lm', '--lowmemory', help="low memory mode - default: False", default=None)
+
 
 # Raw edge-list
 parser.add_argument('-raw', '--rawedges', help="path to store raw edges - default: None", default=None)
@@ -54,6 +56,7 @@ endTS     = _args.endts
 file_loc  = _args.blklocation
 _format   = _args.format
 utxos     = _args.utxos
+lowMemory = _args.lowmemory
 rawEdges  = _args.rawedges
 withTS    = _args.withts
 gbq       = _args.googlebigquery
@@ -68,7 +71,7 @@ if not gbq:
     # `blk_loc` for the location where the blk files are stored
     # `raw Edges` to additionally save graph in edgeList format
     btc_graph = BtcGraph(dl=file_loc, Utxos=utxos, endTS=endTS, graphFormat=_format,
-                        buildRawEdges=rawEdges, withTS=withTS, upload=upload,
+                        buildRawEdges=rawEdges, lowMemory=lowMemory, withTS=withTS, upload=upload,
                         credentials=creds, table_id=table_id, dataset=dataset)
 
     # Start building graph
