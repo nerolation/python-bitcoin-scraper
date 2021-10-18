@@ -14,15 +14,12 @@ from networkit import *
 
 from bitcoin_graph.blockchain_parser.blockchain import Blockchain
 from bitcoin_graph.input_heuristic import InputHeuristic
-from bitcoin_graph.bquploader import bqUpLoader
+from bitcoin_graph.bquploader import bqUpLoader, _print
 
 
 #
 # Helpers
 #
-
-def _print(s):
-    print(f"{datetime.now().strftime('%H:%M:%S')}  -  {s}")
     
 def get_date(folder="./output"):
     try:
@@ -129,8 +126,12 @@ def save_Raw_Edges(rE, blkfile, location=None, uploader=None, lm=False, ax=""):
     # Direct upload to Google BigQuery without local copy
     if uploader:
         _print("Batch contains {:,} edges".format(len(rE)))
-        uploader.upload_data(rE)
-        _print("Upload successful")
+        _print("Start uploading ...")
+        success = uploader.upload_data(rE)
+        if success and success != "stop":
+            _print("Upload successful")
+        return success
+
     
     # Store locally
     else:
@@ -223,14 +224,13 @@ def show_delta_info(t0, loop_duration, blk_file, l):
         return loop_duration
                  
     
- # Logger   
+# Logger   
 class BlkLogger:
     def __init__(self):
         if not os.path.isdir('logs/'):
             _print("Creating logs folder...")
             os.makedirs('logs')
-            
-            
+
     def log(self, s):
         ts = datetime.now().strftime("%Y-%m-%d  |  %H:%M:%S ")
         with open("logs/logs.txt", "a") as logfile:
@@ -268,7 +268,8 @@ class BtcGraph:
             self.dataset  = dataset             # GBQ data set name
             self.uploader = bqUpLoader(credentials=self.creds,
                                        table_id=self.table_id,
-                                       dataset=self.dataset)    # BigQuery uploader
+                                       dataset=self.dataset,
+                                       logger=self.logger) # BigQuery uploader
             
         
         # Meta data
@@ -469,8 +470,11 @@ class BtcGraph:
                 
                 if self.buildRawEdges:
                     if self.upload:
-                        _print("Start uploading ...")
-                        save_Raw_Edges(self.Raw_Edges, fn, uploader=self.uploader, lm=self.lowMemory)
+                        success = save_Raw_Edges(self.Raw_Edges, fn, uploader=self.uploader, lm=self.lowMemory)
+                        if success == "stop":
+                            self.finish_tasks()
+                            _print("Execution finished")
+                            return self
                     else:
                         save_Raw_Edges(self.Raw_Edges, fn, location=self.buildRawEdges, lm=self.lowMemory)
                     # Reset list of raw edges

@@ -6,6 +6,11 @@ import time
 import pandas as pd
 import pandas_gbq
 
+
+def _print(s):
+    print(f"{datetime.now().strftime('%H:%M:%S')}  -  {s}")
+    
+
 def get_csv_files(path):
         files = os.listdir(path)
         files = [f for f in files if f.startswith("raw") and f.endswith(".csv")]
@@ -25,7 +30,7 @@ class bqUpLoader():
     # path: google big query path, default:output/<date>/rawedges
     # table id: google big query table id, default: btc
     # dataset: specific dataset within table, default: bitcoin_transaction
-    def __init__(self, credentials=None, path=None, table_id=None, dataset=None):
+    def __init__(self, credentials=None, path=None, table_id=None, dataset=None, logger=None):
         
         # put google credentials into .gcpkey folder
         self.credentials = credentials
@@ -33,18 +38,22 @@ class bqUpLoader():
         self.client    = bigquery.Client()
         self.table_id  = table_id
         self.dataset   = dataset 
-        
+        self.logger    = logger
         try:
             self.path  = path or "output/{}/rawedges".format(get_date())
         except:
             pass
     
     
-    def upload_data(self, data=None):
+    def upload_data(self, data=None, location="europe-west3", chsz=None):
         try:
             if data:
-                df = pd.DataFrame(data, columns=["ts", "from", "to"])
-                df.to_gbq(self.table_id+"."+self.dataset, if_exists="append", chunksize=int(1e8))
+                if len(data[0]) == 3:
+                    df = pd.DataFrame(data, columns=["ts", "from", "to"])
+                elif len(data[0]) == 6:
+                    df = pd.DataFrame(data, columns=["ts", "txhash", "input_txhash", "vout", "to", "output_index"])
+                df.to_gbq(self.table_id+"."+self.dataset, if_exists="append", location=location, chunksize=chsz)
+                self.logger.log("Upload successful")
             else:
                 files = get_csv_files(self.path)
                 r = len(files)
@@ -58,12 +67,34 @@ class bqUpLoader():
                         df = pd.read_csv(blkfile, names=["ts", "txhash", "input_txhash", "vout", "to", "output_index"])
                     else:   
                         df = pd.read_csv(blkfile, names=["ts", "from", "to"])
-                    df.to_gbq(self.table_id+"."+self.dataset, if_exists="append", chunksize=int(1e8))
-                    time.sleep(2)
+                    df.to_gbq(self.table_id+"."+self.dataset, if_exists="append", location=location, chunksize=chsz)
                     sys.stdout.write("\r\r{:<18} successfully uploaded   \n".format(blkfile.split("/")[-1]))            
                     sys.stdout.write(p(i+1))
-                    time.sleep(0.1)
                 print()
+            return True
+        
+        # Crtl + C to skip upload
         except KeyboardInterrupt:
-            print("Upload skiped ...")
-           
+            self.logger.log("Upload skipped")
+            _print("Upload skipped ...")
+            answer = None
+            while answer not in ["n", "y", "re-upload"]:
+                _print("Do you want to continue? (y/n/re-upload)")
+                answer = input()
+            if answer == "re-upload":
+                return self.upload_data(data)
+            if answer == "n":
+                return "stop"
+            return None
+        
+        # Catch other errors and let user set time to wait
+        except Exception as e:
+            self.logger.log("Something failed")
+            _print("Something failed")
+            _print(e)
+            _print("Do you want to wait for some seconds to try again? (please input seconds to wait)")
+            wait = int(input())
+            _print(f"Waiting for {wait} seconds")
+            time.sleep(wait)
+            _print("Trying again...")
+            return self.upload_data(data)
