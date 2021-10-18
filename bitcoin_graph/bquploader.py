@@ -6,21 +6,7 @@ import time
 import pandas as pd
 import pandas_gbq
 
-
-def _print(s):
-    print(f"{datetime.now().strftime('%H:%M:%S')}  -  {s}")
-    
-
-def get_csv_files(path):
-        files = os.listdir(path)
-        files = [f for f in files if f.startswith("raw") and f.endswith(".csv")]
-        files = map(lambda x: os.path.join(path, x), files)
-        return sorted(files)
-    
-def get_date(folder="./output"):
-    content = [fn for fn in os.listdir(folder)]
-    dates = [datetime.strptime(fn, "%Y%m%d_%H%M%S") for fn in content]
-    return dates[dates.index(max(dates))].strftime("%Y%m%d_%H%M%S")
+from bitcoin_graph.helpers import _print, get_csv_files, get_date
 
 #
 # Big Query Uploader
