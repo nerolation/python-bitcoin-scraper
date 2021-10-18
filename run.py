@@ -1,15 +1,13 @@
 from bitcoin_graph import starting_info
 from bitcoin_graph.btcgraph import *
 from bitcoin_graph.bquploader import *
-from networkit import *
 import argparse
-import time
 import os
 
 
 
 parser = argparse.ArgumentParser(formatter_class=lambda prog: argparse.HelpFormatter(prog,max_help_position=60))
-parser.add_argument('-sf', '--startfile', help=".blk start file - default: blk00000.dat", default="blk00000.dat")
+parser.add_argument('-sf', '--startfile', help=".blk start file (included) - default: blk00000.dat", default="blk00000.dat")
 parser.add_argument('-ef', '--endfile', help=".blk end file (excluded) - default: None", default=None)
 parser.add_argument('-st', '--starttx', help="start transaction (included) - default: None", default=None)
 parser.add_argument('-et', '--endtx', help="end transaction (excluded) - default: None", default=None)
