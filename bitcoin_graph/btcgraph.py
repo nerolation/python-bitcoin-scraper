@@ -273,8 +273,8 @@ class BtcGraph:
             
         
         # Meta data
-        self.lastTxHash   = Meta[3] if Meta else None # Last Tx Hash processed
-        self.lastBlHash   = Meta[2] if Meta else None # Last Block Hash processed
+        self.currTxHash   = Meta[3] if Meta else None # Last Tx Hash processed
+        self.currBlHash   = Meta[2] if Meta else None # Last Block Hash processed
         self.lastBlTs     = Meta[1] if Meta else None # Last Timestamp object of block processed
         self.lastBlTs_s   = int(self.lastBlTs.timestamp()) if Meta else None # Last Timestamp
         self.creationTime = Meta[0] if Meta else datetime.now() # Creation time of `this`
@@ -320,9 +320,9 @@ class BtcGraph:
                 if self.lowMemory:
                     for _index, _v in enumerate(v):
                         if self.withTS:
-                            self.Raw_Edges.append((self.lastBlTs_s,self.lastTxHash,_u, _v, _index))
+                            self.Raw_Edges.append((self.lastBlTs_s,self.currTxHash,_u, _v, _index))
                         else:
-                            self.Raw_Edges.append((self.lastTxHash,_u, _v, _index))
+                            self.Raw_Edges.append((self.currTxHash,_u, _v, _index))
                 else:
                     for _v in v:
                         if self.withTS:
@@ -384,6 +384,9 @@ class BtcGraph:
 
                 _print(f"Processing {blk_file}")
                 for block in blockchain.get_unordered_blocks(blk_file):
+                    
+                    # Keep track of processed blocks
+                    self.currBlHash = block.hash
 
                     # Skip blocks younger than specified `end timestamp`
                     self.lastBlTs   = block.header.timestamp
@@ -391,15 +394,28 @@ class BtcGraph:
                     if self.endTS:                     
                         if self.lastBlTs > self.endTS:
                             continue
-
-                    # Keep track of processed blocks
-                    self.lastBlHash = block.hash
                     
                     for tx in block.transactions:
+                        
+                        # ---
+                        # Custom Start or End
+                        # Set `last-processed hash`
+                        self.currTxHash = tx.hash
+                        
+                         # Try to start if start-transaction sT is reached
+                        if start == False:
+                            start = True if (sT == None or sT == self.currTxHash) else False
+
+                        # Try to stop execution afer last-transaction-hash is reached
+                        if eT != None and start == True:
+                            start = False if eT == self.currTxHash else True
+                            if start == False:
+                                _print("End Tx reached")
+                                _print("Execution terminated")
+                                sys.exit(1)
+                        # ---
+                        
                         if start:
-                            # Set `last-processed hash`
-                            self.lastTxHash = tx.hash
-                            
                             # Skip collecting outputs in low-memory mode
                             if not self.lowMemory:
                                 # Handle Outputs
@@ -446,27 +462,10 @@ class BtcGraph:
 
                             # Build edge
                             self._buildEdge(Vins, Addrs_o)
-    
-
-                        # Try to start if start-transaction sT is reached
-                        if start == False:
-                            start = True if (sT == None or sT == self.lastTxHash) else False
-                            
-                        # Try to stop execution afer last-transaction-hash is reached
-                        if eT != None and start == True:
-                            start = False if eT == self.lastTxHash else True
-                            if start == False:
-                                _print("End Tx reached")
-                                _print("Execution terminated")
-                                sys.exit(1)
 
                 _print(f"File # {fn} successfully parsed")
-                
-                # Free memory
-                self.Utxos = dict(self.Utxos)
                                 
-                # Print stats after each .blk file
-                self.stats()
+                
                 
                 if self.buildRawEdges:
                     if self.upload:
@@ -489,7 +488,9 @@ class BtcGraph:
                     loop_duration = show_delta_info(self.creationTime, loop_duration, blk_file, l)
                   
                 t0 = datetime.now()
-
+                
+                # Print stats after each .blk file
+                self.stats()
                 _print(f"File # {fn} finished")
                     
             # Finish execution 
@@ -532,11 +533,11 @@ class BtcGraph:
     
     def save_GraphComponents(self):
         _print("Saving components...")
-        meta = [self.creationTime, self.lastBlTs, self.lastBlHash, self.lastTxHash]
+        meta = [self.creationTime, self.lastBlTs, self.currBlHash, self.currTxHash]
         save_ALL(self.G, self.graphFormat, self.V, self.Utxos, self.MAP_V, meta)
         
     def load_GraphComponents(self):
-        self.creationTime, self.lastBlTs, self.lastBlHash, self.lastTxHash = Meta
+        self.creationTime, self.lastBlTs, self.currBlHash, self.currTxHash = Meta
         if buildRawEdges:
             self.Raw_Edges = load_edge_list()
             return self.Raw_Edges
