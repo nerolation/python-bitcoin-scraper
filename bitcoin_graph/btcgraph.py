@@ -117,8 +117,6 @@ def save_Raw_Edges(rE, blkfile, location=None, uploader=None, lm=False, ax=""):
         t_1 = datetime.fromtimestamp(int(rE[-1][0])).strftime("%d.%m.%Y")
         if uploader:
             _print("Data ranges from {} to {}".format(t_0, t_1))
-        else:
-             _print("File @ raw_blk_{}{}.csv ranges from {} to {}".format(blkfile, ax, t_0, t_1))
     except:
         pass
     
