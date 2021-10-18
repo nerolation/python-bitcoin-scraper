@@ -39,6 +39,27 @@ def save_Utxos(Utxos):
         writer = csv.writer(f)
         writer.writerows(Utxos.items())
 
+def save_UtxoSplit(Utxos, ix=None, location='./.utxos'):
+    if not os.path.isdir(location):
+        os.makedirs(location)
+    if not os.path.isdir("{}/{}".format(location,now)):
+        os.makedirs("{}/{}".format(location,now))
+    if ix != None: 
+        fn = ix
+    else:
+        fn = len(os.listdir("{}/{}".format(location,now)))
+    with open('{}/{}/uxtosplit_{}.pkl'.format(location,now,fn), 'wb') as handle:
+        pickle.dump(Utxos, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+def load_UtxoSplits(location='./.utxos'):
+    l = len(os.listdir("{}/{}".format(location,now)))
+    for fn in range(l)[::-1]:
+        with open('{}/{}/uxtosplit_{}.pkl'.format(location,now,fn), 'rb') as handle:
+            #_print(f"providing {fn}")
+            yield fn, pickle.load(handle)  
+                        
+
 def load_Utxos(path='./output/{}/'.format(get_date())):
     _print("Loading Utxos...")
     with open(path + "/Utxos.csv", 'r') as f:  
@@ -89,16 +110,24 @@ def load_Meta():
     _print("Loading Metadata...")
     return pickle.load(open("./output/{}/Metadata.meta".format(get_date()), "rb"))
 
-def save_Raw_Edges(rE, blkfile, location=None, uploader=None):
+def save_Raw_Edges(rE, blkfile, location=None, uploader=None, lm=False, ax=""):
     # If edges contain timestamp
-    if len(rE[0]) == 3:
+    try:
         t_0 = datetime.fromtimestamp(int(rE[0][0])).strftime("%d.%m.%Y")
         t_1 = datetime.fromtimestamp(int(rE[-1][0])).strftime("%d.%m.%Y")
         if uploader:
             _print("Data ranges from {} to {}".format(t_0, t_1))
         else:
-             _print("File @ raw_blk_{}.csv ranges from {} to {}".format(blkfile, t_0, t_1))
+             _print("File @ raw_blk_{}{}.csv ranges from {} to {}".format(blkfile, ax, t_0, t_1))
+    except:
+        pass
     
+    # If low memory mode is activated, flatten each line of rE
+    if lm:
+        # if third entry is a tuple then transaction != coinbase transaction
+        rE = [(*row[0:2],*row[2],*row[3:5]) if type(row[2]) == tuple else (*row[0:3],*row[2:5]) for row in rE]
+        ax = "_lm"
+        
     # Direct upload to Google BigQuery without local copy
     if uploader:
         _print("Batch contains {:,} edges".format(len(rE)))
@@ -107,13 +136,13 @@ def save_Raw_Edges(rE, blkfile, location=None, uploader=None):
     
     # Store locally
     else:
-        _print("File @ raw_blk_{}.csv contains {:,} edges".format(blkfile, len(rE)))
+        _print("File @ raw_blk_{}{}.csv contains {:,} edges".format(blkfile, ax, len(rE)))
         _print("Saving raw edges...")
         if not os.path.isdir('{}/output'.format(location)):
             os.makedirs('{}/output'.format(location))
         if not os.path.isdir('{}/output/{}/rawedges/'.format(location,now)):
             os.makedirs('{}/output/{}/rawedges'.format(location,now))
-        with open("{}/output/{}/rawedges/raw_blk_{}.csv".format(location, now, blkfile),"w",newline="") as f:
+        with open("{}/output/{}/rawedges/raw_blk_{}{}.csv".format(location, now, blkfile, ax),"w",newline="") as f:
             cw = csv.writer(f,delimiter=",")
             cw.writerows(rE)
         _print("Saving successful")
@@ -167,9 +196,13 @@ def print_memory_info():
     _print(colored("--> {:>5,.1f}  %   of memory available".format(100-m.percent), col))
     _print(colored("---  -------   ----------------------------", col))
                  
-
+def used_ram():
+    m = psutil.virtual_memory()
+    return m.percent
+    
+        
 def estimate_end(loopduration, curr_file, total_files):
-    avg_loop = int(sum(loopduration)/len(loopduration))
+    avg_loop = int(sum(loopduration[-15:])/len(loopduration[-15:]))
     delta_files = total_files - curr_file
     _estimate = datetime.fromtimestamp(datetime.now().timestamp() + delta_files * avg_loop)
     return "Estimated end:  " +  _estimate.strftime("%d.%m  |  %H:%M:%S")
@@ -214,7 +247,7 @@ class BtcGraph:
     def __init__(self, G=None, V=None, Utxos=None, MAP_V=None, Raw_Edges=None, Meta=None,
                  dl='~/.bitcoin/blocks', buildRawEdges=False, withTS=None, endTS=None, 
                  graphFormat="binary", upload=False, credentials=None, table_id=None, dataset=None,
-                 clusterInputs=False, iC=None
+                 lowMemory=False, clusterInputs=False, iC=None
                 ):
         self.endTS        = endTS               # Timestamp of last block
         self.dl           = dl                  # Data location where blk files are stored
@@ -230,6 +263,7 @@ class BtcGraph:
         self.logger       = BlkLogger()         # Logging module
         self.graphFormat  = graphFormat         # Graph format 
         self.upload       = upload              # Bool to directly upload to GCP
+        self.lowMemory    = lowMemory           # Bool to activate low-memory-consumption mode
         if self.upload:
             self.creds    = credentials         # Path to google credentials json
             self.table_id = table_id            # GBQ table id
@@ -282,14 +316,23 @@ class BtcGraph:
     
     def _buildEdge(self, u, v):
         if self.buildRawEdges:
-            for _u in u:
-                for _v in v:
-                    if self.withTS:
-                        self.Raw_Edges.append((self.lastBlTs_s,_u, _v))
-                    else:
-                        self.Raw_Edges.append((_u, _v))
+            for _u in set(u):
+                # Collect Vout in low-memory mode
+                if self.lowMemory:
+                    for _index, _v in enumerate(v):
+                        if self.withTS:
+                            self.Raw_Edges.append((self.lastBlTs_s,self.lastTxHash,_u, _v, _index))
+                        else:
+                            self.Raw_Edges.append((self.lastTxHash,_u, _v, _index))
+                else:
+                    for _v in v:
+                        if self.withTS:
+                            self.Raw_Edges.append((self.lastBlTs_s,_u, _v))
+                        else:
+                            self.Raw_Edges.append((_u, _v))
             return
-
+        
+        # Directly build graph
         else:
             # Inputs
             inputs  = [self._addNode(_u) if _u not in self.V else self.MAP_V[_u] for _u in u]
@@ -352,49 +395,60 @@ class BtcGraph:
 
                     # Keep track of processed blocks
                     self.lastBlHash = block.hash
-
+                    
                     for tx in block.transactions:
                         if start:
+                            # Set `last-processed hash`
+                            self.lastTxHash = tx.hash
                             
-                            # Handle Outputs
-                            outs={}
-                            for o_index, output in enumerate(tx.outputs):
-                                outs[o_index] = [address.address for address in output.addresses]
+                            # Skip collecting outputs in low-memory mode
+                            if not self.lowMemory:
+                                # Handle Outputs
+                                outs={}
+                                for o_index, output in enumerate(tx.outputs):
+                                    outs[o_index] = [address.address for address in output.addresses]
 
-                            self.Utxos[tx.hash] = outs
+                                self.Utxos[tx.hash] = outs
 
                             # Handle Inputs
+                            Vins = []
                             for inp in tx.inputs:
 
                                 # Coinbase Txs
                                 if inp.transaction_hash == "0" * 64:
-                                    # Outputs
-                                    Addrs_o = [addr.address for output in tx.outputs for addr in output.addresses]
-
                                     # Build egde from ZERO to all Transaction output addresses
-                                    self._buildEdge(["00"], Addrs_o)
-
+                                    Vins.append("00")
+                                    
                                 # If possible to connect inputs -> prev. outputs
                                 elif inp.transaction_hash in self.Utxos:
 
                                     # Inputs (Vin)
                                     Vout = inp.transaction_index
                                     Vin = self.Utxos[inp.transaction_hash][Vout]
-
-                                    # Outputs
-                                    Addrs_o = [addr.address for output in tx.outputs for addr in output.addresses]
-
-                                    # Build edge
-                                    self._buildEdge(Vin, Addrs_o)
-
+                                 
+                                    Vins.extend(Vin)
+                                    
                                     # Clean MAP
                                     del self.Utxos[inp.transaction_hash][Vout]
                                     if len(self.Utxos[inp.transaction_hash]) == 0:
                                         del self.Utxos[inp.transaction_hash]
-              
-                        # Set `last-processed hash`
-                        self.lastTxHash = tx.hash
-                        
+                                
+                                # If low-memory is activated and at least one ./.utxos/uxtosplit file exists
+                                # Same code as above but updating the respective uxtosplit file
+                                elif self.lowMemory:
+                                    Vins.append((inp.transaction_hash, inp.transaction_index))
+                                
+                                else:
+                                    continue
+                                    
+
+                            # Outputs
+                            Addrs_o = [addr.address for output in tx.outputs for addr in output.addresses]
+
+                            # Build edge
+                            self._buildEdge(Vins, Addrs_o)
+    
+
                         # Try to start if start-transaction sT is reached
                         if start == False:
                             start = True if (sT == None or sT == self.lastTxHash) else False
@@ -414,12 +468,13 @@ class BtcGraph:
                                 
                 # Print stats after each .blk file
                 self.stats()
+                
                 if self.buildRawEdges:
                     if self.upload:
                         _print("Start uploading ...")
-                        save_Raw_Edges(self.Raw_Edges, fn, uploader=self.uploader)
+                        save_Raw_Edges(self.Raw_Edges, fn, uploader=self.uploader, lm=self.lowMemory)
                     else:
-                        save_Raw_Edges(self.Raw_Edges, fn, location=self.buildRawEdges)
+                        save_Raw_Edges(self.Raw_Edges, fn, location=self.buildRawEdges, lm=self.lowMemory)
                     # Reset list of raw edges
                     self.Raw_Edges = []
                     
@@ -432,6 +487,7 @@ class BtcGraph:
                     loop_duration = show_delta_info(self.creationTime, loop_duration, blk_file, l)
                   
                 t0 = datetime.now()
+
                 _print(f"File # {fn} finished")
                     
             # Finish execution 
@@ -449,14 +505,28 @@ class BtcGraph:
             self.finish_tasks()
             return self 
      
+    
+    # Activate to split up the Utxo dict in multiple files 
+    # and start looping to find Input -> Output connections in order to safe memory
+    def split_Utxos_and_activate_UtxosLooping(self):
+        if not self.UtxosLoop:
+            self.UtxosLoop = True
+            
+        # Save Utxos ...
+        _print("Saving Utxo Split...")
+        save_UtxoSplit(self.Utxos)
+        
+        # Start new Utxos dict
+        self.Utxos = {}
+            
         
     def finish_tasks(self):
         if self.buildRawEdges:
-            save_Utxos(self.Utxos)
+            if self.Utxos:
+                save_Utxos(self.Utxos)
         else:
             self.save_GraphComponents()
-            _print(f"Took {int((datetime.now()-self.creationTime).total_seconds()/60)} minutes since graph creation")
-
+        _print(f"Took {int((datetime.now()-self.creationTime).total_seconds()/60)} minutes since graph creation")
     
     def save_GraphComponents(self):
         _print("Saving components...")
@@ -476,14 +546,16 @@ class BtcGraph:
     def stats(self):
         if self.buildRawEdges:
             graphSize = sys.getsizeof(self.Raw_Edges)+sys.getsizeof(self.Utxos)
-            _print("Edge list and Utxo mapping have {:>16,.0f} bytes".format(graphSize))
-            _print("Edge list and Utxo mapping have {:>16,.0f} mb".format((graphSize)/1048576))
+            _print("Edge list and Utxo mapping have {:>11,.0f} bytes".format(graphSize))
+            _print("Edge list and Utxo mapping have {:>11,.0f} MB".format((graphSize)/1048576))
+            _print("Utxo mapping has                {:>11,.0f} entries".format(len(self.Utxos)))
         else:
             _print("Graph has {:>16,} nodes".format(self.G.numberOfNodes()))
             _print("Graph has {:>16,} edges".format(self.G.numberOfEdges()))
+            _print("Utxo mapping has {:>11,.0f} entries".format(len(self.Utxos)))
             graphSize = sys.getsizeof(self.V)+sys.getsizeof(self.MAP_V)+sys.getsizeof(self.Utxos)
             _print("Graph has {:>16,.0f} bytes".format(graphSize))
-            _print("Graph has {:>16,.0f} mb".format((graphSize)/1048576))
+            _print("Graph has {:>16,.0f} MB".format((graphSize)/1048576))
         print_memory_info()
         
         

@@ -32,7 +32,10 @@ def starting_info(args):
             args["credentials"] = colored("deactivated", "red")
             args["tableid"] = colored("deactivated", "red")
             args["dataset"] = colored("deactivated", "red")
-            
+        
+        # Custom changes
+        if args["lowmemory"] not in ["False", "None", "0"]:
+            print(colored("`Low-memory mode` is activated - Inputs will represent a Tx hash and the Vout", "green"))
         print("{:<18}{:<13}".format("current wd:", __cwd__))
         for k, v in zip(args.keys(), args.values()):
             if (v and k not in ["startfile","blklocation","format","rawedges","credentials","tableid","dataset"]):
@@ -43,6 +46,7 @@ def starting_info(args):
                 v = colored("deactivated", "red")
             elif str(v) in ["True", "1"]:
                 v = colored("activated", "green")
+                
             print("{:<18}{:<13}".format(k+":", str(v)))
 
     for i in range(2):

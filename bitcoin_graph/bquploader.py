@@ -54,7 +54,10 @@ class bqUpLoader():
 
                 # loop over raw edges files
                 for i, blkfile in enumerate(files):
-                    df = pd.read_csv(blkfile, names=["ts", "from", "to"])
+                    if "lm" in blkfile:
+                        df = pd.read_csv(blkfile, names=["ts", "txhash", "input_txhash", "vout", "to", "output_index"])
+                    else:   
+                        df = pd.read_csv(blkfile, names=["ts", "from", "to"])
                     df.to_gbq(self.table_id+"."+self.dataset, if_exists="append", chunksize=int(1e8))
                     time.sleep(2)
                     sys.stdout.write("\r\r{:<18} successfully uploaded   \n".format(blkfile.split("/")[-1]))            
