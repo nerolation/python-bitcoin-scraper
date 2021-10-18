@@ -464,8 +464,6 @@ class BtcGraph:
                             self._buildEdge(Vins, Addrs_o)
 
                 _print(f"File # {fn} successfully parsed")
-                                
-                
                 
                 if self.buildRawEdges:
                     if self.upload:
