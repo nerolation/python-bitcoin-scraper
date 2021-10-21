@@ -1,6 +1,6 @@
 from bitcoin_graph import starting_info
-from bitcoin_graph.btcgraph import *
-from bitcoin_graph.bquploader import *
+from bitcoin_graph.BtcTxParser import *
+from bitcoin_graph.BQUploader import *
 import argparse
 import os
 
@@ -19,8 +19,9 @@ parser.add_argument('-lm', '--lowmemory', help="low memory mode (collecting raw 
 
 
 # Raw edge-list
-parser.add_argument('-raw', '--rawedges', help="path to store raw edges - default: None", default=None)
+parser.add_argument('-lp', '--localpath', help="path to store raw edges - default: None", default=None)
 parser.add_argument('-wts', '--withts', help="collect list of edges with timestamps - default: No", default=None)
+parser.add_argument('-wv', '--withvalue', help="collect output values - default: No", default=None)
 
 # Uploader
 if os.path.isdir(".gcpkey") and len(os.listdir(".gcpkey")) > 0:
@@ -55,8 +56,9 @@ file_loc  = _args.blklocation
 _format   = _args.format
 utxos     = _args.utxos
 lowMemory = _args.lowmemory
-rawEdges  = _args.rawedges
+localpath = _args.localpath
 withTS    = _args.withts
+withvalue = _args.withvalue
 gbq       = _args.googlebigquery
 upload    = _args.directupload
 creds     = _args.credentials
@@ -68,12 +70,13 @@ if not gbq:
     # Initialize btc graph object
     # `blk_loc` for the location where the blk files are stored
     # `raw Edges` to additionally save graph in edgeList format
-    btc_graph = BtcGraph(dl=file_loc, Utxos=utxos, endTS=endTS, graphFormat=_format,
-                        buildRawEdges=rawEdges, lowMemory=lowMemory, withTS=withTS, upload=upload,
-                        credentials=creds, table_id=table_id, dataset=dataset)
+    btc_graph = BtcTxParser(dl=file_loc, Utxos=utxos, endTS=endTS,
+                            lowMemory=lowMemory, withTS=withTS, upload=upload, 
+                            collectValue =withvalue,
+                            credentials=creds, table_id=table_id, dataset=dataset)
 
     # Start building graph
-    btc_graph.build(startFile,endFile,startTx,endTx)
+    btc_graph.parse(startFile,endFile,startTx,endTx)
     
 else:
     # Initialize Big Query Uploader
