@@ -4,10 +4,11 @@ import pickle
 from termcolor import colored
 import psutil
 import re
+import csv
 
 # Helpers
 #
-
+now = datetime.now().strftime("%Y%m%d_%H%M%S")
 def _print(s):
     print(f"{datetime.now().strftime('%H:%M:%S')}  -  {s}")
 
@@ -103,7 +104,7 @@ def load_Meta():
     _print("Loading Metadata...")
     return pickle.load(open("./output/{}/Metadata.meta".format(get_date()), "rb"))
 
-def save_Raw_Edges(rE, blkfile, location=None, uploader=None, lm=False, ax=""):
+def save_edge_list(rE, blkfile, location=None, uploader=None, lm=False, ax=""):
     # If edges contain timestamp
     try:
         t_0 = datetime.fromtimestamp(int(rE[0][0])).strftime("%d.%m.%Y")

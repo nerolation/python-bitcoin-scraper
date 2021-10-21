@@ -22,25 +22,27 @@ def starting_info(args):
     # if building graph
     else:
         print(f"Starting btc graph version {__version__} with the following arguments:")
-        if str(args["rawedges"]) not in ["False", "None", "0"]:
-            args["format"] = colored("deactivated", "red")
-        if str(args["withts"]) not in ["False", "None", "0"] and str(args["rawedges"]) in ["False", "None", "0"]:
+        if str(args["withts"]) not in ["False", "None", "0"] and str(args["localpath"]) in ["False", "None", "0"]:
             print(colored("`Withts` argument has no affect because collecting raw Edges is deactivated", "red"))
             args["withts"] = colored("deactivated", "red")
+            time.sleep(2)
+        if str(args["withvalue"]) not in ["False", "None", "0"] and str(args["localpath"]) in ["False", "None", "0"]:
+            print(colored("`Withvalue` argument has no affect because collecting raw Edges is deactivated", "red"))
+            args["withvalue"] = colored("deactivated", "red")
             time.sleep(2)
         if str(args["directupload"]) in ["False", "None", "0"]:
             args["credentials"] = colored("deactivated", "red")
             args["tableid"] = colored("deactivated", "red")
             args["dataset"] = colored("deactivated", "red")
-        
+            args["directupload"] = 0
         # Custom changes
         if args["lowmemory"] not in ["False", "None", "0"]:
             print(colored("`Low-memory mode` is activated - Inputs will represent a Tx hash and the Vout", "green"))
         print("{:<18}{:<13}".format("current wd:", __cwd__))
         for k, v in zip(args.keys(), args.values()):
-            if (v and k not in ["startfile","blklocation","format","rawedges","credentials","tableid","dataset"]):
+            if (v and k not in ["startfile","blklocation","format","localpath","credentials","tableid","dataset"]):
                 v = colored("activated", "green")
-            elif k not in ["startfile","blklocation","format", "rawedges","credentials","tableid","dataset"]:
+            elif k not in ["startfile","blklocation","format", "localpath","credentials","tableid","dataset"]:
                 v = colored("deactivated", "red")
             elif str(v) == "None":
                 v = colored("deactivated", "red")
