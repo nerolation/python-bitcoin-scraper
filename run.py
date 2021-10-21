@@ -1,6 +1,6 @@
 from bitcoin_graph import starting_info
-from bitcoin_graph.BtcTxParser import *
-from bitcoin_graph.BQUploader import *
+from bitcoin_graph.btcTxParser import *
+from bitcoin_graph.bqUploader import *
 import argparse
 import os
 
