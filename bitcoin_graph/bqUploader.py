@@ -16,7 +16,7 @@ class BQUploader():
     # path: google big query path, default:output/<date>/rawedges
     # table id: google big query table id, default: btc
     # dataset: specific dataset within table, default: bitcoin_transaction
-    def __init__(self, credentials=None, path=None, table_id=None, dataset=None, logger=None):
+    def __init__(self, credentials, table_id, dataset, path=None, logger=None):
         
         # put google credentials into .gcpkey folder
         self.credentials = credentials
@@ -31,7 +31,7 @@ class BQUploader():
             pass
     
     
-    def upload_data(self, data=None, location="europe-west3", chsz=None):
+    def upload_data(self, data=None, location="europe-west3", chsz=int(1e7)):
         try:
             if data:
                 if len(data[0]) == 3:
@@ -40,8 +40,10 @@ class BQUploader():
                     df = pd.DataFrame(data, columns=["ts", "txhash", "input_txhash", "vout", "output_to", "output_index"])
                 elif len(data[0]) == 7:
                     df = pd.DataFrame(data, columns=["ts", "txhash", "input_txhash", "vout", "output_to", "output_index", "value"])
+                    
                 df.to_gbq(self.table_id+"."+self.dataset, if_exists="append", location=location, chunksize=chsz)
-                self.logger.log("Upload successful")
+                if self.logger:
+                    self.logger.log("Upload successful")
             else:
                 files = get_csv_files(self.path)
                 r = len(files)
@@ -74,6 +76,12 @@ class BQUploader():
             if answer == "n":
                 return "stop"
             return None
+        
+        # Catch "Table already exists" error
+        # This errer must not appear in theory since "if_exists" is set to "append"
+        # however, sometimes it still appears. Then, just try again...
+        except pandas_gbq.gbq.TableCreationError:
+            return self.upload_data(data)
         
         # Catch other errors and let user set time to wait
         except Exception as e:

@@ -11,7 +11,7 @@ from networkit import *
 
 from bitcoin_graph.blockchain_parser.blockchain import Blockchain
 from bitcoin_graph.input_heuristic import InputHeuristic
-from bitcoin_graph.BQUploader import BQUploader, _print
+from bitcoin_graph.bqUploader import BQUploader, _print
 from bitcoin_graph.logger import BlkLogger
 from bitcoin_graph.helpers import *
 
