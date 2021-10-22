@@ -9,6 +9,6 @@ class BlkLogger:
             os.makedirs('logs')
 
     def log(self, s):
-        ts = datetime.now().strftime("%Y-%m-%d  |  %H:%M:%S ")
+        ts = datetime.now().strftime("%Y-%m-%d  |  %H:%M:%S   ")
         with open("logs/logs.txt", "a") as logfile:
             logfile.write(ts + s + "\n")

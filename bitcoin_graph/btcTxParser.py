@@ -81,10 +81,7 @@ class BtcTxParser:
                         
                         # If len of Val != len of v then there is some crappy output script in the output
                         except IndexError:
-                            print(self.currTxHash)
-                            print(list(enumerate(v)))
-                            print(Val)
-                            print(_index)
+                            self.logger.log(f"Failed tx: {self.currTxHash}")
                         
                     elif self.withTS:
                         self.edge_list.append((self.lastBlTs_s,self.currTxHash,_u, _v, _index))
@@ -123,7 +120,7 @@ class BtcTxParser:
             # t0 = time iteration beginns
             # loop_duration = list of delta times of iterations
             # Value received by output
-            l, t0, loop_duration, Val = len(blk_files), None, [], None
+            l, t0, loop_duration, Val = len(blk_files)+file_number(sF) if sF else len(blk_files), None, [], None
             
             # Loop through all .blk files
             for blk_file in blk_files:
