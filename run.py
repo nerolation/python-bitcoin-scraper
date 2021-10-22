@@ -13,13 +13,12 @@ parser.add_argument('-st', '--starttx', help="start transaction (included) - def
 parser.add_argument('-et', '--endtx', help="end transaction (excluded) - default: None", default=None)
 parser.add_argument('-ets', '--endts', help="end timestamp of block - default: None", default=None)
 parser.add_argument('-loc', '--blklocation', help=".blk|.csv file location - default: ~/.bitcoin/blocks", default="~/.bitcoin/blocks")
-parser.add_argument('-f', '--format', help="networkit storage format (binary|edgelist) - default: binary", default="binary")
 parser.add_argument('-utxo', '--utxos', help="path to existing Utxos file - default: None", default=None)
 parser.add_argument('-lm', '--lowmemory', help="low memory mode (collecting raw tx inputs) - default: False", default=None)
 
 
 # Raw edge-list
-parser.add_argument('-lp', '--localpath', help="path to store raw edges - default: None", default=None)
+parser.add_argument('-lp', '--localpath', help="path to store raw edges - default: ./", default="./")
 parser.add_argument('-wts', '--withts', help="collect list of edges with timestamps - default: No", default=None)
 parser.add_argument('-wv', '--withvalue', help="collect output values - default: No", default=None)
 
@@ -53,7 +52,6 @@ startTx   = _args.starttx
 endTx     = _args.endtx
 endTS     = _args.endts
 file_loc  = _args.blklocation
-_format   = _args.format
 utxos     = _args.utxos
 lowMemory = _args.lowmemory
 localpath = _args.localpath
@@ -72,7 +70,7 @@ if not gbq:
     # `raw Edges` to additionally save graph in edgeList format
     btc_graph = BtcTxParser(dl=file_loc, Utxos=utxos, endTS=endTS,
                             lowMemory=lowMemory, withTS=withTS, upload=upload, 
-                            collectValue =withvalue,
+                            collectValue =withvalue, localpath=localpath,
                             credentials=creds, table_id=table_id, dataset=dataset)
 
     # Start building graph
