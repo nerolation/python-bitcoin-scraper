@@ -1,9 +1,13 @@
+# The bitcoin-transaction-parser is an extension of the python-blockchain-parser 
+# that can be found here: https://github.com/alecalve/python-bitcoin-blockchain-parser.
+# The python-blockchain-parser module was is used to read from the raw .blk files. 
+# To avoid installing level-db the indexing was removed from the library such that only
+# the `get_unordered_blocks` function remains.
+
+
 import os
 import sys
 import time
-
-import pandas as pd
-import matplotlib.pyplot as plt
 
 from termcolor import colored
 from datetime import datetime
@@ -24,7 +28,7 @@ class BtcTxParser:
     
     def __init__(self, edge_list=None, Meta=None, dl='~/.bitcoin/blocks', Utxos=None, 
                  localpath=None, withTS=None, endTS=None, clusterInputs=None, iC=None,
-                 upload=False, credentials=None, table_id=None, dataset=None, lowMemory=False,
+                 upload=False, credentials=None, table_id=None, dataset=None, raw=False,
                  collectValue=None
                 ):
         self.endTS        = endTS               # Timestamp of last block
@@ -35,13 +39,13 @@ class BtcTxParser:
         self.edge_list    = edge_list or []     # Raw Edges list
         self.logger       = BlkLogger()         # Logging module
         self.upload       = upload              # Bool to directly upload to GCP
-        self.lowMemory    = lowMemory           # Bool to activate low-memory-consumption mode
+        self.raw          = raw                 # Bool to activate parsing without mapping Utxos to Inputs
         self.collectValue = collectValue        # Bool to activate collecting values
         if self.upload:
             self.creds    = credentials         # Path to google credentials json
             self.table_id = table_id            # GBQ table id
             self.dataset  = dataset             # GBQ data set name
-            self.uploader = bqUpLoader(credentials=self.creds,
+            self.uploader = BQUploader(credentials=self.creds,
                                        table_id=self.table_id,
                                        dataset=self.dataset,
                                        logger=self.logger) # BigQuery uploader
@@ -50,8 +54,8 @@ class BtcTxParser:
         # Meta data
         self.currTxHash   = Meta[3] if Meta else None # Last Tx Hash processed
         self.currBlHash   = Meta[2] if Meta else None # Last Block Hash processed
-        self.lastBlTs     = Meta[1] if Meta else None # Last Timestamp object of block processed
-        self.lastBlTs_s   = int(self.lastBlTs.timestamp()) if Meta else None # Last Timestamp
+        self.currBl     = Meta[1] if Meta else None # Last Timestamp object of block processed
+        self.currBl_s   = int(self.currBl.timestamp()) if Meta else None # Last Timestamp
         self.creationTime = Meta[0] if Meta else datetime.now() # Creation time of `this`
 
         # Heuristic 1
@@ -66,37 +70,59 @@ class BtcTxParser:
         if self.Utxos:
             self.Utxos = load_Utxos(self.Utxos)
         
-        _print("New Btc Tx-Parser initialized")
+        _print("Btc Tx-Parser initialized")
         time.sleep(1)
     
     
     def _buildEdge(self, u, v, Val=None):
         for _u in set(u):
-            # Collect Vout in low-memory mode
-            if self.lowMemory:
+            # If collecting raw edges, then we need _index as vout too
+            if self.raw:
                 for _index, _v in enumerate(v):
+                    
+                    # Collecting both, timestamps and values
                     if self.withTS and self.collectValue:
                         try:
-                            self.edge_list.append((self.lastBlTs_s,self.currTxHash,_u, _v, _index, Val[_index]))
+                            self.edge_list.append((self.currBl_s,self.currTxHash,_u, _v, _index, Val[_index]))
                         
                         # If len of Val != len of v then there is some crappy output script in the output
                         except IndexError:
-                            self.logger.log(f"Failed tx: {self.currTxHash}")
-                        
+                            self.logger.log(f"Buggy output script @ {self.currTxHash}")
+                            
+                    # ... no values    
                     elif self.withTS:
-                        self.edge_list.append((self.lastBlTs_s,self.currTxHash,_u, _v, _index))
-                        
+                        self.edge_list.append((self.currBl_s,self.currTxHash,_u, _v, _index))
+                    
+                    # ... no timestamps
                     elif self.collectValue:
-                        self.edge_list.append((self.currTxHash,_u, _v, _index, Val[_index]))
-                        
+                        try:
+                            self.edge_list.append((self.currTxHash,_u, _v, _index, Val[_index]))
+                        except IndexError:
+                            self.logger.log(f"Buggy output script @ {self.currTxHash}")
+                            
+                    # ... no timestamps and no values    
                     else:
                         self.edge_list.append((self.currTxHash,_u, _v, _index))
+            
+            # Input/Output mapped edges
             else:
                 for _v in v:
-                    if self.withTS:
-                        self.edge_list.append((self.lastBlTs_s,_u, _v))
+                    if self.withTS and self.collectValue:
+                        try:
+                            self.edge_list.append((self.currBl_s,self.currTxHash,_u, _v))
+                        except IndexError:
+                            self.logger.log(f"Buggy output script @ {self.currTxHash}")
+                            
+                    elif self.withTS:
+                        self.edge_list.append((self.currBl_s,self.currTxHash,_u, _v))
+                        
+                    elif self.collectValue:
+                        try:
+                            self.edge_list.append((self.currTxHash,_u, _v))
+                        except IndexError:
+                            self.logger.log(f"Buggy output script @ {self.currTxHash}")
                     else:
-                        self.edge_list.append((_u, _v))
+                        self.edge_list.append((self.currTxHash,_u, _v))
         return
 
     
@@ -142,10 +168,10 @@ class BtcTxParser:
                     self.currBlHash = block.hash
 
                     # Skip blocks younger than specified `end timestamp`
-                    self.lastBlTs   = block.header.timestamp
-                    self.lastBlTs_s = int(self.lastBlTs.timestamp())
+                    self.currBl   = block.header.timestamp
+                    self.currBl_s = int(self.currBl.timestamp())
                     if self.endTS:                     
-                        if self.lastBlTs > self.endTS:
+                        if self.currBl > self.endTS:
                             continue
                     
                     for tx in block.transactions:
@@ -170,7 +196,7 @@ class BtcTxParser:
                         
                         if start:
                             # Skip collecting outputs in low-memory mode
-                            if not self.lowMemory:
+                            if not self.raw:
                                 # Handle Outputs
                                 outs={}
                                 for o_index, output in enumerate(tx.outputs):
@@ -203,7 +229,7 @@ class BtcTxParser:
                                 
                                 # If low-memory is activated and at least one ./.utxos/uxtosplit file exists
                                 # Same code as above but updating the respective uxtosplit file
-                                elif self.lowMemory:
+                                elif self.raw:
                                     Vins.append((inp.transaction_hash, inp.transaction_index))
                                 
                                 else:
@@ -224,7 +250,7 @@ class BtcTxParser:
                 
                 # Upload if uploading is activated
                 if self.upload:
-                    success = save_edge_list(self.edge_list, fn, uploader=self.uploader, lm=self.lowMemory)
+                    success = save_edge_list(self.edge_list, fn, uploader=self.uploader, lm=self.raw)
                     
                     # If something failed, user can manually stop
                     if success == "stop":
@@ -234,7 +260,7 @@ class BtcTxParser:
                     
                 # Else, store edge list locally
                 else:
-                    save_edge_list(self.edge_list, fn, location=self.localpath, lm=self.lowMemory)
+                    save_edge_list(self.edge_list, fn, location=self.localpath, lm=self.raw)
                     
                 # Reset list of raw edges
                 self.edge_list = []
@@ -278,8 +304,9 @@ class BtcTxParser:
     def stats(self):
         csize = sys.getsizeof(self.edge_list)+sys.getsizeof(self.Utxos)
         _print("Edge list and Utxo mapping have {:>11,.0f} bytes".format(csize))
-        _print("Edge list and Utxo mapping have {:>11,.0f} MB".format((csize)/1048576))
-        _print("Utxo mapping has                {:>11,.0f} entries".format(len(self.Utxos)))
+        _print("Edge list and Utxo mapping have {:>11,.0f} MB".format((csize)/(1024**2)))
+        if len(self.Utxos) > 0:
+            _print("Utxo mapping has                {:>11,.0f} entries".format(len(self.Utxos)))
         print_memory_info()
         
         
