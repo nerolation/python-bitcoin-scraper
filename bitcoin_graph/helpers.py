@@ -209,7 +209,32 @@ def file_number(s):
         return 0
     else:
         return int(match.lstrip("0"))    
-                 
+
+def get_table_schema(cls):
+    if len(cls) == 3:
+        return [ {'name': '{}'.format(cls[0]), 'type': 'INTEGER'},
+                 {'name': '{}'.format(cls[1]), 'type': 'STRING'},
+                 {'name': '{}'.format(cls[2]), 'type': 'STRING'}
+             ]
+    
+    elif len(cls) == 6:
+        return [ {'name': '{}'.format(cls[0]), 'type': 'INTEGER'},
+                 {'name': '{}'.format(cls[1]), 'type': 'STRING'},
+                 {'name': '{}'.format(cls[2]), 'type': 'STRING'},
+                 {'name': '{}'.format(cls[3]), 'type': 'INTEGER'},
+                 {'name': '{}'.format(cls[4]), 'type': 'STRING'},
+                 {'name': '{}'.format(cls[5]), 'type': 'INTEGER'}
+               ]
+        
+    elif len(cls) == 7:
+        return [ {'name': '{}'.format(cls[0]), 'type': 'INTEGER'},
+                 {'name': '{}'.format(cls[1]), 'type': 'STRING'},
+                 {'name': '{}'.format(cls[2]), 'type': 'STRING'},
+                 {'name': '{}'.format(cls[3]), 'type': 'INTEGER'},
+                 {'name': '{}'.format(cls[4]), 'type': 'STRING'},
+                 {'name': '{}'.format(cls[5]), 'type': 'INTEGER'},
+                 {'name': '{}'.format(cls[6]), 'type': 'INTEGER'}
+               ]
 
 def show_delta_info(t0, loop_duration, blk_file, l):
     delta = (datetime.now()-t0).total_seconds()

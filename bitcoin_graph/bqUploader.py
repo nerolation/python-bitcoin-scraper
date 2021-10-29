@@ -6,7 +6,7 @@ import time
 import pandas as pd
 import pandas_gbq
 
-from bitcoin_graph.helpers import _print, get_csv_files, get_date
+from bitcoin_graph.helpers import _print, get_csv_files, get_date, get_table_schema
 
 #
 # Big Query Uploader
@@ -35,13 +35,19 @@ class BQUploader():
         try:
             if data:
                 if len(data[0]) == 3:
-                    df = pd.DataFrame(data, columns=["ts", "from", "output_to"])
+                    cls = ["ts", "input_from", "output_to"]
+                    df = pd.DataFrame(data, columns=cls)
+                    schema=get_table_schema(cls)
                 elif len(data[0]) == 6:
-                    df = pd.DataFrame(data, columns=["ts", "txhash", "input_txhash", "vout", "output_to", "output_index"])
+                    cls = ["ts", "txhash", "input_txhash", "vout", "output_to", "output_index"]
+                    df = pd.DataFrame(data, columns=cls)
+                    schema=get_table_schema(cls)
                 elif len(data[0]) == 7:
-                    df = pd.DataFrame(data, columns=["ts", "txhash", "input_txhash", "vout", "output_to", "output_index", "value"])
+                    cls = ["ts", "txhash", "input_txhash", "vout", "output_to", "output_index", "value"]
+                    df = pd.DataFrame(data, columns=cls)
+                    schema=get_table_schema(cls)
                     
-                df.to_gbq(self.table_id+"."+self.dataset, if_exists="append", location=location, chunksize=chsz)
+                df.to_gbq(self.table_id+"."+self.dataset, if_exists="append", location=location, chunksize=chsz, table_schema=schema)
                 if self.logger:
                     self.logger.log("Upload successful")
             else:
