@@ -104,7 +104,7 @@ def load_Meta():
     _print("Loading Metadata...")
     return pickle.load(open("./output/{}/Metadata.meta".format(get_date()), "rb"))
 
-def save_edge_list(rE, blkfile, location=None, uploader=None, lm=False, ax=""):
+def save_edge_list(rE, blkfile, location=None, uploader=None, raw=False, ax="", cblk=False):
     # If edges contain timestamp
     try:
         t_0 = datetime.fromtimestamp(int(rE[0][0])).strftime("%d.%m.%Y")
@@ -114,17 +114,21 @@ def save_edge_list(rE, blkfile, location=None, uploader=None, lm=False, ax=""):
     except:
         pass
     
-    # If low memory mode is activated, flatten each line of rE
-    if lm:
+    # If collecting blk numbers is activated, then append it to every edge
+    if cblk:
+        rE = list(map(lambda x: (x) + (blkfile,), rE))
+    
+    # If raw edges mode is activated, flatten each line of rE
+    if raw:
         # if third entry is a tuple then transaction != coinbase transaction
-        rE = [(*row[0:2],*row[2],*row[3:5]) if type(row[2]) == tuple else (*row[0:3],*row[2:5]) for row in rE]
-        ax = "_lm"
+        rE = [(*row[0:2],*row[2],*row[3:]) if type(row[2]) == tuple else (*row[0:3],*row[2:]) for row in rE]
+        ax = "_raw"
         
     # Direct upload to Google BigQuery without local copy
     if uploader:
         _print("Batch contains {:,} edges".format(len(rE)))
         _print("Start uploading ...")
-        success = uploader.upload_data(rE)
+        success = uploader.upload_data(rE, cblk=cblk)
         if success and success != "stop":
             _print("Upload successful")
         return success
@@ -210,31 +214,35 @@ def file_number(s):
     else:
         return int(match.lstrip("0"))    
 
-def get_table_schema(cls):
+def get_table_schema(cls, cblk):
     if len(cls) == 3:
-        return [ {'name': '{}'.format(cls[0]), 'type': 'INTEGER'},
-                 {'name': '{}'.format(cls[1]), 'type': 'STRING'},
-                 {'name': '{}'.format(cls[2]), 'type': 'STRING'}
-             ]
+        c = [ {'name': '{}'.format(cls[0]), 'type': 'INTEGER'},
+              {'name': '{}'.format(cls[1]), 'type': 'STRING'},
+              {'name': '{}'.format(cls[2]), 'type': 'STRING'}
+            ]
     
     elif len(cls) == 6:
-        return [ {'name': '{}'.format(cls[0]), 'type': 'INTEGER'},
-                 {'name': '{}'.format(cls[1]), 'type': 'STRING'},
-                 {'name': '{}'.format(cls[2]), 'type': 'STRING'},
-                 {'name': '{}'.format(cls[3]), 'type': 'INTEGER'},
-                 {'name': '{}'.format(cls[4]), 'type': 'STRING'},
-                 {'name': '{}'.format(cls[5]), 'type': 'INTEGER'}
-               ]
+        c = [ {'name': '{}'.format(cls[0]), 'type': 'INTEGER'},
+              {'name': '{}'.format(cls[1]), 'type': 'STRING'},
+              {'name': '{}'.format(cls[2]), 'type': 'STRING'},
+              {'name': '{}'.format(cls[3]), 'type': 'INTEGER'},
+              {'name': '{}'.format(cls[4]), 'type': 'STRING'},
+              {'name': '{}'.format(cls[5]), 'type': 'INTEGER'}
+            ]
         
-    elif len(cls) == 7:
-        return [ {'name': '{}'.format(cls[0]), 'type': 'INTEGER'},
-                 {'name': '{}'.format(cls[1]), 'type': 'STRING'},
-                 {'name': '{}'.format(cls[2]), 'type': 'STRING'},
-                 {'name': '{}'.format(cls[3]), 'type': 'INTEGER'},
-                 {'name': '{}'.format(cls[4]), 'type': 'STRING'},
-                 {'name': '{}'.format(cls[5]), 'type': 'INTEGER'},
-                 {'name': '{}'.format(cls[6]), 'type': 'INTEGER'}
-               ]
+    elif len(cls) >= 7:
+        c = [ {'name': '{}'.format(cls[0]), 'type': 'INTEGER'},
+              {'name': '{}'.format(cls[1]), 'type': 'STRING'},
+              {'name': '{}'.format(cls[2]), 'type': 'STRING'},
+              {'name': '{}'.format(cls[3]), 'type': 'INTEGER'},
+              {'name': '{}'.format(cls[4]), 'type': 'STRING'},
+              {'name': '{}'.format(cls[5]), 'type': 'INTEGER'},
+              {'name': '{}'.format(cls[6]), 'type': 'INTEGER'}
+            ]
+    if cblk:
+        c.append({'name': '{}'.format("blk_file_nr"), 'type': 'INTEGER'})
+        
+    return c
 
 def show_delta_info(t0, loop_duration, blk_file, l):
     delta = (datetime.now()-t0).total_seconds()

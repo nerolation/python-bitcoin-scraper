@@ -31,21 +31,20 @@ class BQUploader():
             pass
     
     
-    def upload_data(self, data=None, location="europe-west3", chsz=int(1e7)):
+    def upload_data(self, data=None, location="europe-west3", chsz=int(1e7), cblk=None):
         try:
             if data:
                 if len(data[0]) == 3:
                     cls = ["ts", "input_from", "output_to"]
-                    df = pd.DataFrame(data, columns=cls)
-                    schema=get_table_schema(cls)
                 elif len(data[0]) == 6:
                     cls = ["ts", "txhash", "input_txhash", "vout", "output_to", "output_index"]
-                    df = pd.DataFrame(data, columns=cls)
-                    schema=get_table_schema(cls)
-                elif len(data[0]) == 7:
+                elif len(data[0]) >= 7:
                     cls = ["ts", "txhash", "input_txhash", "vout", "output_to", "output_index", "value"]
-                    df = pd.DataFrame(data, columns=cls)
-                    schema=get_table_schema(cls)
+                    
+                if cblk:
+                    cls.append("blk_file_nr")
+                df = pd.DataFrame(data, columns=cls)
+                schema=get_table_schema(cls, cblk)
                     
                 df.to_gbq(self.table_id+"."+self.dataset, if_exists="append", location=location, chunksize=chsz, table_schema=schema)
                 if self.logger:
@@ -59,8 +58,11 @@ class BQUploader():
 
                 # loop over raw edges files
                 for i, blkfile in enumerate(files):
-                    if "lm" in blkfile:
-                        df = pd.read_csv(blkfile, names=["ts", "txhash", "input_txhash", "vout", "output_to", "output_index"])
+                    if "raw" in blkfile:
+                        cols = ["ts", "txhash", "input_txhash", "vout", "output_to", "output_index"]
+                        if cblk:
+                            cols.append("blk_file_nr")
+                        df = pd.read_csv(blkfile, names=cols)
                     else:   
                         df = pd.read_csv(blkfile, names=["ts", "from", "output_to"])
                     df.to_gbq(self.table_id+"."+self.dataset, if_exists="append", location=location, chunksize=chsz)
@@ -78,16 +80,16 @@ class BQUploader():
                 _print("Do you want to continue? (y/n/re-upload)")
                 answer = input()
             if answer == "re-upload":
-                return self.upload_data(data)
+                return self.upload_data(data, cblk)
             if answer == "n":
                 return "stop"
             return None
         
         # Catch "Table already exists" error
-        # This errer must not appear in theory since "if_exists" is set to "append"
+        # This error must not appear in theory since "if_exists" is set to "append"
         # however, sometimes it still appears. Then, just try again...
         except pandas_gbq.gbq.TableCreationError:
-            return self.upload_data(data)
+            return self.upload_data(data, cblk)
         
         # Catch other errors and let user set time to wait
         except Exception as e:
@@ -99,4 +101,4 @@ class BQUploader():
             _print(f"Waiting for {wait} seconds")
             time.sleep(wait)
             _print("Trying again...")
-            return self.upload_data(data)
+            return self.upload_data(data, cblk)

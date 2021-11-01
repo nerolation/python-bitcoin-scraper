@@ -29,7 +29,7 @@ class BtcTxParser:
     def __init__(self, edge_list=None, Meta=None, dl='~/.bitcoin/blocks', Utxos=None, 
                  localpath=None, withTS=None, endTS=None, clusterInputs=None, iC=None,
                  upload=False, credentials=None, table_id=None, dataset=None, raw=False,
-                 collectValue=None
+                 collectValue=None, cblk=None
                 ):
         self.endTS        = endTS               # Timestamp of last block
         self.dl           = dl                  # Data location where blk files are stored
@@ -41,6 +41,7 @@ class BtcTxParser:
         self.upload       = upload              # Bool to directly upload to GCP
         self.raw          = raw                 # Bool to activate parsing without mapping Utxos to Inputs
         self.collectValue = collectValue        # Bool to activate collecting values
+        self.cblk         = cblk                # Bool to activate collection blk file numbers
         if self.upload:
             self.creds    = credentials         # Path to google credentials json
             self.table_id = table_id            # GBQ table id
@@ -102,7 +103,7 @@ class BtcTxParser:
                             
                     # ... no timestamps and no values    
                     else:
-                        self.edge_list.append((self.currTxHash,_u, _v, _index))
+                        self.edge_list.append((self.currTxHash,_u, _v, _index))    
             
             # Input/Output mapped edges
             else:
@@ -155,11 +156,11 @@ class BtcTxParser:
                 assert(len(self.edge_list) == 0)
                 
                 # Get integer of .blk filename (blk00001 => 1)
-                fn = file_number(blk_file)
+                self.fn = file_number(blk_file)
                 
                 # Log progress
-                _print(colored(f"Block File # {fn}/{l}", "green"))
-                self.logger.log(f"Block File # {fn}/{l}")
+                _print(colored(f"Block File # {self.fn}/{l}", "green"))
+                self.logger.log(f"Block File # {self.fn}/{l}")
 
                 _print(f"Processing {blk_file}")
                 for block in blockchain.get_unordered_blocks(blk_file):
@@ -246,11 +247,11 @@ class BtcTxParser:
                             # Build edge
                             self._buildEdge(Vins, Addrs_o, Val)
 
-                _print(f"File # {fn} successfully parsed")
+                _print(f"File # {self.fn} successfully parsed")
                 
                 # Upload if uploading is activated
                 if self.upload:
-                    success = save_edge_list(self.edge_list, fn, uploader=self.uploader, lm=self.raw)
+                    success = save_edge_list(self.edge_list, self.fn, uploader=self.uploader, raw=self.raw, cblk=self.cblk)
                     
                     # If something failed, user can manually stop
                     if success == "stop":
@@ -260,7 +261,7 @@ class BtcTxParser:
                     
                 # Else, store edge list locally
                 else:
-                    save_edge_list(self.edge_list, fn, location=self.localpath, lm=self.raw)
+                    save_edge_list(self.edge_list, self.fn, location=self.localpath, raw=self.raw)
                     
                 # Reset list of raw edges
                 self.edge_list = []
@@ -275,7 +276,7 @@ class BtcTxParser:
                   
                 t0 = datetime.now()
                 
-                _print(f"File # {fn} finished")
+                _print(f"File # {self.fn} finished")
                 
                 # Print stats after each .blk file
                 self.stats()
