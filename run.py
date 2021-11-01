@@ -12,15 +12,16 @@ parser.add_argument('-ef', '--endfile', help=".blk end file (excluded) - default
 parser.add_argument('-st', '--starttx', help="start transaction (included) - default: None", default=None)
 parser.add_argument('-et', '--endtx', help="end transaction (excluded) - default: None", default=None)
 parser.add_argument('-ets', '--endts', help="end timestamp of block - default: None", default=None)
-parser.add_argument('-loc', '--blklocation', help=".blk|.csv file location - default: ~/.bitcoin/blocks", default="~/.bitcoin/blocks")
+parser.add_argument('-l', '--blklocation', help=".blk|.csv file location - default: ~/.bitcoin/blocks", default="~/.bitcoin/blocks")
 parser.add_argument('-utxo', '--utxos', help="path to existing Utxos file - default: None", default=None)
-parser.add_argument('-lm', '--lowmemory', help="low memory mode (collecting raw tx inputs) - default: False", default=None)
+parser.add_argument('-r', '--raw', help="collecting raw tx inputs (saves much RAM) - default: False", default=None)
 
 
 # Raw edge-list
 parser.add_argument('-lp', '--localpath', help="path to store raw edges - default: ./", default="./")
 parser.add_argument('-wts', '--withts', help="collect list of edges with timestamps - default: No", default=None)
 parser.add_argument('-wv', '--withvalue', help="collect output values - default: No", default=None)
+parser.add_argument('-cblk', '--collectblk', help="collect blk file numbers with every edge - default: No", default=None)
 
 # Uploader
 if os.path.isdir(".gcpkey") and len(os.listdir(".gcpkey")) > 0:
@@ -53,10 +54,11 @@ endTx     = _args.endtx
 endTS     = _args.endts
 file_loc  = _args.blklocation
 utxos     = _args.utxos
-lowMemory = _args.lowmemory
+raw = _args.raw
 localpath = _args.localpath
 withTS    = _args.withts
 withvalue = _args.withvalue
+cblk      = _args.collectblk
 gbq       = _args.googlebigquery
 upload    = _args.directupload
 creds     = _args.credentials
@@ -64,23 +66,27 @@ table_id  = _args.tableid
 dataset   = _args.dataset
 # -----------------------------------------------
 
-if not gbq:
-    # Initialize btc graph object
-    # `blk_loc` for the location where the blk files are stored
-    # `raw Edges` to additionally save graph in edgeList format
-    btc_graph = BtcTxParser(dl=file_loc, Utxos=utxos, endTS=endTS,
-                            lowMemory=lowMemory, withTS=withTS, upload=upload, 
-                            collectValue =withvalue, localpath=localpath,
-                            credentials=creds, table_id=table_id, dataset=dataset)
 
-    # Start building graph
-    btc_graph.parse(startFile,endFile,startTx,endTx)
-    
-else:
+# If only uploading to BigQuery
+if gbq:
     # Initialize Big Query Uploader
     bq = bqUpLoader(credentials=creds, path=file_loc, table_id=table_id, dataset=dataset)
     
     # Upload raw edges csv files to google cloud/big-query
     bq.upload_data()
+
     
+# Start Parser
+else:
+    # Initialize btc graph object
+    # `blk_loc` for the location where the blk files are stored
+    # `raw Edges` to additionally save graph in edgeList format
+    btc_graph = BtcTxParser(dl=file_loc, Utxos=utxos, endTS=endTS,
+                            raw=raw, withTS=withTS, upload=upload, 
+                            collectValue =withvalue, cblk=cblk, localpath=localpath,
+                            credentials=creds, table_id=table_id, dataset=dataset)
+
+    # Start building graph
+    btc_graph.parse(startFile,endFile,startTx,endTx)
+       
 print("-----------------------------------------")
