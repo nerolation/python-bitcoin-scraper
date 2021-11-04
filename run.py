@@ -1,9 +1,22 @@
+# Copyright (C) Anton Wahrstätter 2021
+
+# This file is part of python-bitcoin-graph which was forked from python-bitcoin-blockchain-parser.
+#
+# It is subject to the license terms in the LICENSE file found in the top-level
+# directory of this distribution.
+#
+# No part of python-bitcoin-graph, including this file, may be copied,
+# modified, propagated, or distributed except according to the terms contained
+# in the LICENSE file.
+
+
+# Command line interface to either start parsing or upload already parsed edges to BigQuery
+
 from bitcoin_graph import starting_info
 from bitcoin_graph.btcTxParser import *
 from bitcoin_graph.bqUploader import *
 import argparse
 import os
-
 
 
 parser = argparse.ArgumentParser(formatter_class=lambda prog: argparse.HelpFormatter(prog,max_help_position=60))
@@ -12,16 +25,16 @@ parser.add_argument('-ef', '--endfile', help=".blk end file (excluded) - default
 parser.add_argument('-st', '--starttx', help="start transaction (included) - default: None", default=None)
 parser.add_argument('-et', '--endtx', help="end transaction (excluded) - default: None", default=None)
 parser.add_argument('-ets', '--endts', help="end timestamp of block - default: None", default=None)
-parser.add_argument('-l', '--blklocation', help=".blk|.csv file location - default: ~/.bitcoin/blocks", default="~/.bitcoin/blocks")
+parser.add_argument('-loc', '--blklocation', help=".blk|.csv file location - default: ~/.bitcoin/blocks", default="~/.bitcoin/blocks")
 parser.add_argument('-utxo', '--utxos', help="path to existing Utxos file - default: None", default=None)
-parser.add_argument('-r', '--raw', help="collecting raw tx inputs (saves much RAM) - default: False", default=None)
+parser.add_argument('-raw', '--raw', help="collecting raw tx inputs (saves much RAM) - default: False", default=None)
 
 
 # Raw edge-list
-parser.add_argument('-lp', '--localpath', help="path to store raw edges - default: ./", default="./")
-parser.add_argument('-wts', '--withts', help="collect list of edges with timestamps - default: No", default=None)
-parser.add_argument('-wv', '--withvalue', help="collect output values - default: No", default=None)
-parser.add_argument('-cblk', '--collectblk', help="collect blk file numbers with every edge - default: No", default=None)
+parser.add_argument('-path', '--localpath', help="path to store raw edges - default: ./", default="./")
+parser.add_argument('-withts', '--withts', help="collect list of edges with timestamps - default: No", default=None)
+parser.add_argument('-withv', '--withvalue', help="collect output values - default: No", default=None)
+parser.add_argument('-collectblk', '--collectblk', help="collect blk file numbers with every edge - default: No", default=None)
 
 # Uploader
 if os.path.isdir(".gcpkey") and len(os.listdir(".gcpkey")) > 0:
@@ -30,12 +43,12 @@ else:
     creds = None
 
 # Direct upload
-parser.add_argument('-up', '--directupload', help="upload edges directly(!) to google bigquery - default: False", default=None)
+parser.add_argument('-upload', '--directupload', help="upload edges directly(!) to google bigquery - default: False", default=None)
 
-# Upload existing raw_blk files
-parser.add_argument('-gbq', '--googlebigquery', help="upload edges to google bigquery - default: False", default=None)
+# Upload existing raw_blk files (no parsing)
+parser.add_argument('-gbq', '--googlebigquery', help="upload edges to google bigquery without parsing - default: False", default=None)
 
-# Upload configurations
+# Upload configurations (if direct upload or uploading existing files)
 parser.add_argument('-c', '--credentials', help="path to google credentials (.*json)- default: ./.gcpkey/.*json", default=creds)
 parser.add_argument('-tid', '--tableid', help="bigquery table id - default: btc", default="btc")
 parser.add_argument('-ds', '--dataset', help="bigquery data set name - default: bitcoin_transactions", default="bitcoin_transactions")
@@ -54,7 +67,7 @@ endTx     = _args.endtx
 endTS     = _args.endts
 file_loc  = _args.blklocation
 utxos     = _args.utxos
-raw = _args.raw
+raw       = _args.raw
 localpath = _args.localpath
 withTS    = _args.withts
 withvalue = _args.withvalue
