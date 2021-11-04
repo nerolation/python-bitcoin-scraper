@@ -1,4 +1,15 @@
-# Console info for Btc Graph and BQ Uploader
+# Copyright (C) Anton Wahrstätter 2021
+
+# This file is part of python-bitcoin-graph which was forked from python-bitcoin-blockchain-parser.
+#
+# It is subject to the license terms in the LICENSE file found in the top-level
+# directory of this distribution.
+#
+# No part of python-bitcoin-graph, including this file, may be copied,
+# modified, propagated, or distributed except according to the terms contained
+# in the LICENSE file.
+
+# Console info after initiating the btc parser or uploader to show current settings
 
 import os, sys
 import time
@@ -22,22 +33,20 @@ def starting_info(args):
     # if building graph
     else:
         print(f"Starting btc graph version {__version__} with the following arguments:")
-        if str(args["withts"]) not in ["False", "None", "0"] and str(args["localpath"]) in ["False", "None", "0"]:
-            print(colored("`Withts` argument has no affect because collecting raw Edges is deactivated", "red"))
-            args["withts"] = colored("deactivated", "red")
-            time.sleep(2)
-        if str(args["withvalue"]) not in ["False", "None", "0"] and str(args["localpath"]) in ["False", "None", "0"]:
-            print(colored("`Withvalue` argument has no affect because collecting raw Edges is deactivated", "red"))
-            args["withvalue"] = colored("deactivated", "red")
-            time.sleep(2)
+        if str(args["withts"]) in ["False", "None", "0"]:
+            args["withts"] = 0
+        if str(args["withvalue"]) in ["False", "None", "0"]:
+            args["withvalue"] = 0
         if str(args["directupload"]) in ["False", "None", "0"]:
             args["credentials"] = colored("deactivated", "red")
             args["tableid"] = colored("deactivated", "red")
             args["dataset"] = colored("deactivated", "red")
             args["directupload"] = 0
         # Custom changes
-        if args["lowmemory"] not in ["False", "None", "0"]:
-            print(colored("`Low-memory mode` is activated - Inputs will represent a Tx hash and the Vout", "green"))
+        if args["raw"] in ["False", "None", "0"]:
+            args["raw"] = 0
+        else:
+            print(colored("Raw parsing is activated - Inputs will represent a Tx hash and the Vout", "green"))
         print("{:<18}{:<13}".format("current wd:", __cwd__))
         for k, v in zip(args.keys(), args.values()):
             if (v and k not in ["startfile","blklocation","format","localpath","credentials","tableid","dataset"]):
@@ -50,7 +59,7 @@ def starting_info(args):
                 v = colored("activated", "green")
                 
             print("{:<18}{:<13}".format(k+":", str(v)))
-
+            
     for i in range(2):
         for i in ["|", "/", "-", "\\"]:
             sys.stdout.write("\rInitializing... "+i)
