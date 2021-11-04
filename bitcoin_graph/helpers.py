@@ -9,6 +9,8 @@
 # modified, propagated, or distributed except according to the terms contained
 # in the LICENSE file.
 
+# File with helper functions
+
 from datetime import datetime
 import os
 import pickle
@@ -116,8 +118,6 @@ def load_Meta():
     return pickle.load(open("./output/{}/Metadata.meta".format(get_date()), "rb"))
 
 def save_edge_list(rE, blkfile, location=None, uploader=None, raw=False, ax="", cblk=False):
-    rE = rE[0:1000]
-    
     # If edges contain timestamp
     try:
         t_0 = datetime.fromtimestamp(int(rE[0][0])).strftime("%d.%m.%Y")
