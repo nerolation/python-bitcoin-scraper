@@ -77,11 +77,11 @@ class BtcTxParser:
         if self.Utxos:
             self.Utxos = load_Utxos(self.Utxos)
         
-        _print("Btc Tx-Parser initialized")
+        print("Btc Tx-Parser successfully initialized")
         time.sleep(1)
     
     
-    def _buildEdge(self, u, v, Val=None):
+    def _buildEdge(self, u, v):
         for _u in set(u):
             # If collecting raw edges, then we need _index as vout too
             if self.raw:
@@ -90,7 +90,7 @@ class BtcTxParser:
                     # Collecting both, timestamps and values
                     if self.withTS and self.collectValue:
                         try:
-                            self.edge_list.append((self.currBl_s,self.currTxID,_u, _v, _index, Val[_index]))
+                            self.edge_list.append((self.currBl_s,self.currTxID,_u, _v, _index, self.Val[_index]))
                         
                         # If len of Val != len of v then there is some crappy output script in the output
                         except IndexError:
@@ -103,7 +103,7 @@ class BtcTxParser:
                     # ... no timestamps
                     elif self.collectValue:
                         try:
-                            self.edge_list.append((self.currTxID,_u, _v, _index, Val[_index]))
+                            self.edge_list.append((self.currTxID,_u, _v, _index, self.Val[_index]))
                         except IndexError:
                             self.logger.log(f"Buggy output script @ {self.currTxID}")
                             
@@ -116,7 +116,7 @@ class BtcTxParser:
                 for _v in v:
                     if self.withTS and self.collectValue:
                         try:
-                            self.edge_list.append((self.currBl_s,self.currTxID,_u, _v))
+                            self.edge_list.append((self.currBl_s,self.currTxID,_u, _v, self.Val[_index]))
                         except IndexError:
                             self.logger.log(f"Buggy output script @ {self.currTxID}")
                             
@@ -125,7 +125,7 @@ class BtcTxParser:
                         
                     elif self.collectValue:
                         try:
-                            self.edge_list.append((self.currTxID,_u, _v))
+                            self.edge_list.append((self.currTxID,_u, _v, self.Val[_index]))
                         except IndexError:
                             self.logger.log(f"Buggy output script @ {self.currTxID}")
                     else:
@@ -137,7 +137,7 @@ class BtcTxParser:
     # Build Graph
     # Arguments: start-file sF, end-file eF, start-Tx sT, end-Tx eT
     def parse(self, sF, eF, sT, eT): 
-        _print("Start building...")
+        #_print("Start building...")
         try:
             # Instantiate the Blockchain by giving the path to the directory
             # containing the .blk files created by bitcoind
@@ -153,7 +153,7 @@ class BtcTxParser:
             # t0 = time iteration beginns
             # loop_duration = list of delta times of iterations
             # Value received by output
-            l, t0, loop_duration, Val = len(blk_files)+file_number(sF) if sF else len(blk_files), None, [], None
+            self.l, self.t0, self.loop_duration, self.Val = len(blk_files)+file_number(sF) if sF else len(blk_files), None, [], None
             
             # Loop through all .blk files
             for blk_file in blk_files:
@@ -165,10 +165,10 @@ class BtcTxParser:
                 self.fn = file_number(blk_file)
                 
                 # Log progress
-                _print(colored(f"Block File # {self.fn}/{l}", "green"))
-                self.logger.log(f"Block File # {self.fn}/{l}")
+                #_print(colored(f"Block File # {self.fn}/{l}", "green"))
+                self.logger.log(f"Block File # {self.fn}/{self.l}")
 
-                _print(f"Processing {blk_file}")
+                #_print(f"Processing {blk_file}")
                 for block in blockchain.get_unordered_blocks(blk_file):
                     
                     # Keep track of processed blocks
@@ -240,47 +240,36 @@ class BtcTxParser:
                                     Vins.append((inp.transaction_hash, inp.transaction_index))
                                 
                                 else:
-                                    continue
-                                    
+                                    continue 
 
                             # Outputs
                             Addrs_o = [addr.address for output in tx.outputs for addr in output.addresses]
                             
                             # Output Value
                             if self.collectValue:
-                                Val = [output.value for output in tx.outputs]
+                                self.Val = [output.value for output in tx.outputs]
 
                             # Build edge
-                            self._buildEdge(Vins, Addrs_o, Val)
+                            self._buildEdge(Vins, Addrs_o)
 
                 _print(f"File # {self.fn} successfully parsed")
                 
-                # Upload if uploading is activated
-                if self.upload:
-                    success = save_edge_list(self.edge_list, self.fn, uploader=self.uploader, raw=self.raw, cblk=self.cblk)
-                    
-                    # If something failed, user can manually stop
-                    if success == "stop":
-                        self.finish_tasks()
-                        _print("Execution finished")
-                        return self
-                    
-                # Else, store edge list locally
-                else:
-                    save_edge_list(self.edge_list, self.fn, location=self.localpath, raw=self.raw)
-                    
+                # Safe or upload edge list
+                success = save_edge_list(self)
+
+                # If something failed, user can manually stop
+                if success == "stop":
+                    self.finish_tasks()
+                    _print("Execution finished")
+                    return self   
+              
                 # Reset list of raw edges
                 self.edge_list = []
-                    
-                # Show loop duration after first iteration
-                if t0:
-                     loop_duration = show_delta_info(t0, loop_duration, blk_file, l)
-                        
-                # Must be the first iteration
-                else:
-                    loop_duration = show_delta_info(self.creationTime, loop_duration, blk_file, l)
-                  
-                t0 = datetime.now()
+                
+                # Reset t0 for next block
+                self.t0 = datetime.now()
+                
+                
                 
                 _print(f"File # {self.fn} finished")
                 

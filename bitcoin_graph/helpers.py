@@ -117,19 +117,20 @@ def load_Meta():
     _print("Loading Metadata...")
     return pickle.load(open("./output/{}/Metadata.meta".format(get_date()), "rb"))
 
-def save_edge_list(rE, blkfile, location=None, uploader=None, raw=False, ax="", cblk=False):
-    # If edges contain timestamp
-    try:
-        t_0 = datetime.fromtimestamp(int(rE[0][0])).strftime("%d.%m.%Y")
-        t_1 = datetime.fromtimestamp(int(rE[-1][0])).strftime("%d.%m.%Y")
-        if uploader:
-            _print("Data ranges from {} to {}".format(t_0, t_1))
-    except:
-        pass
+def save_edge_list(parser, uploader=None, location=None):
+    rE           = parser.edge_list # List with edges
+    blkfilenr    = parser.fn        # File name
+    raw          = parser.raw       # Bool if collecting raw
+    cblk         = parser.cblk      # Bool if collecting blk file number
+
+    if parser.upload:
+        uploader = parser.uploader
+    else:
+        location = parser.localpath
     
     # If collecting blk numbers is activated, then append it to every edge
     if cblk:
-        rE = list(map(lambda x: (x) + (blkfile,), rE))
+        rE = list(map(lambda x: (x) + (blkfilenr,), rE))
     
     # If raw edges mode is activated, flatten each line of rE
     if raw:
@@ -139,26 +140,28 @@ def save_edge_list(rE, blkfile, location=None, uploader=None, raw=False, ax="", 
         
     # Direct upload to Google BigQuery without local copy
     if uploader:
-        _print("Batch contains {:,} edges".format(len(rE)))
-        _print("Start uploading ...")
+        #_print("Batch contains {:,} edges".format(len(rE)))
+        #_print("Start uploading ...")
         success = uploader.upload_data(rE, cblk=cblk)
-        if success and success != "stop":
-            _print("Upload successful")
+        #if success and success != "stop":
+            #_print("Upload successful")
         return success
 
     
     # Store locally
     else:
-        _print("File @ raw_blk_{}{}.csv contains {:,} edges".format(blkfile, ax, len(rE)))
-        _print("Saving raw edges...")
+        #_print("File @ raw_blk_{}{}.csv contains {:,} edges".format(blkfile, ax, len(rE)))
+        #_print("Saving raw edges...")
         if not os.path.isdir('{}/output'.format(location)):
             os.makedirs('{}/output'.format(location))
         if not os.path.isdir('{}/output/{}/rawedges/'.format(location,now)):
             os.makedirs('{}/output/{}/rawedges'.format(location,now))
-        with open("{}/output/{}/rawedges/raw_blk_{}{}.csv".format(location, now, blkfile, ax),"w",newline="") as f:
+        with open("{}/output/{}/rawedges/raw_blk_{}{}.csv".format(location, now, blkfilenr, ax),"w",newline="") as f:
             cw = csv.writer(f,delimiter=",")
             cw.writerows(rE)
-        _print("Saving successful")
+        #_print("Saving successful")
+        
+    tablestats(parser)
 
 def load_edge_list():
     _print("Loading edge list...")
@@ -218,7 +221,7 @@ def estimate_end(loopduration, curr_file, total_files):
     avg_loop = int(sum(loopduration[-15:])/len(loopduration[-15:]))
     delta_files = total_files - curr_file
     _estimate = datetime.fromtimestamp(datetime.now().timestamp() + delta_files * avg_loop)
-    return "Estimated end:  " +  _estimate.strftime("%d.%m  |  %H:%M:%S")
+    return _estimate.strftime("%d.%m-%H:%M:%S")
 
 def file_number(s):
     match = re.search("([0-9]{5})", s).group()
@@ -257,12 +260,41 @@ def get_table_schema(cls, cblk):
         
     return c
 
-def show_delta_info(t0, loop_duration, blk_file, l):
-    delta = (datetime.now()-t0).total_seconds()
-    if delta > 5:
-        _print(f"File @ `{blk_file}` took {int(delta)} seconds")
-        loop_duration.append(delta)
-        _print(f"Average duration of {int(sum(loop_duration)/len(loop_duration))} seconds per .blk file")
-        _print(estimate_end(loop_duration, file_number(blk_file), l))
-        return loop_duration
+def tablestats(parser):
+    rE            = parser.edge_list     # List with edges
+    blkfilenr     = parser.fn           # File nr.
+    raw           = parser.raw           # Bool if collecting raw
+    re_len        = len(rE)              # Nr. of edges
+    t0            = parser.t0
+    loop_duration = parser.loop_duration  
+    total_files   = parser.l
+    
+    # Add time delta to loop duration
+    if t0:
+        delta = int((datetime.now()-t0).total_seconds())
+        
+    else:
+        _print("{:-^9}| {:-^21} | {:-^12} | {:-^10} | {:-^15} | {:-^14}".format("","","","","","")) 
+        _print("{:^9}| {:^21} | {:^12} | {:^10} | {:^15} | {:^14}".format("","","","Processing","Avg. Processing","Estimated")) 
+        _print("{:^9}| {:^21} | {:^12} | {:^10} | {:^15} | {:^14}".format("Blk Nr.","Date Range","Edges in blk","Time","Time","End")) 
+        _print("{:-^9}| {:-^21} | {:-^12} | {:-^10} | {:-^15} | {:-^14}".format("","","","","","")) 
+        delta = int((datetime.now()-parser.creationTime).total_seconds())
+    
+    parser.loop_duration.append(delta)
+    parser.loop_duration = parser.loop_duration[-15:]
+    
+    # If edges contain timestamp
+    try:
+        t_0 = datetime.fromtimestamp(int(rE[0][0])).strftime("%d.%m.%Y")
+        t_1 = datetime.fromtimestamp(int(rE[-1][0])).strftime("%d.%m.%Y")
+ 
+    except:
+        t_0, t_1 = "-", "-"
+    
+    estimated_end = estimate_end(loop_duration, blkfilenr, total_files)
+    avg_loop      = int(sum(loop_duration)/len(loop_duration))
+    
+    _print("{:>4}/{:<4}| {:>10}-{:>10} | {:^12,} | {:>9}s | {:>14}s | {:>14}".format(blkfilenr,total_files,t_0,t_1,re_len,delta,avg_loop,estimated_end)) 
+
+
             
