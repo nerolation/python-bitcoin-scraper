@@ -1,3 +1,14 @@
+# Copyright (C) Anton Wahrstätter 2021
+
+# This file is part of python-bitcoin-graph which was forked from python-bitcoin-blockchain-parser.
+#
+# It is subject to the license terms in the LICENSE file found in the top-level
+# directory of this distribution.
+#
+# No part of python-bitcoin-graph, including this file, may be copied,
+# modified, propagated, or distributed except according to the terms contained
+# in the LICENSE file.
+
 from datetime import datetime
 import os
 import pickle
@@ -105,6 +116,8 @@ def load_Meta():
     return pickle.load(open("./output/{}/Metadata.meta".format(get_date()), "rb"))
 
 def save_edge_list(rE, blkfile, location=None, uploader=None, raw=False, ax="", cblk=False):
+    rE = rE[0:1000]
+    
     # If edges contain timestamp
     try:
         t_0 = datetime.fromtimestamp(int(rE[0][0])).strftime("%d.%m.%Y")

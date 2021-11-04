@@ -1,6 +1,17 @@
+# Copyright (C) Anton Wahrstätter 2021
+
+# This file is part of python-bitcoin-graph which was forked from python-bitcoin-blockchain-parser.
+#
+# It is subject to the license terms in the LICENSE file found in the top-level
+# directory of this distribution.
+#
+# No part of python-bitcoin-graph, including this file, may be copied,
+# modified, propagated, or distributed except according to the terms contained
+# in the LICENSE file.
+
 # The bitcoin-transaction-parser is an extension of the python-blockchain-parser 
 # that can be found here: https://github.com/alecalve/python-bitcoin-blockchain-parser.
-# The python-blockchain-parser module was is used to read from the raw .blk files. 
+# The python-blockchain-parser module is used to read from the raw .blk files. 
 # To avoid installing level-db the indexing was removed from the library such that only
 # the `get_unordered_blocks` function remains.
 
@@ -14,7 +25,6 @@ from datetime import datetime
 from networkit import *
 
 from bitcoin_graph.blockchain_parser.blockchain import Blockchain
-from bitcoin_graph.input_heuristic import InputHeuristic
 from bitcoin_graph.bqUploader import BQUploader, _print
 from bitcoin_graph.logger import BlkLogger
 from bitcoin_graph.helpers import *
@@ -27,7 +37,7 @@ from bitcoin_graph.helpers import *
 class BtcTxParser:
     
     def __init__(self, edge_list=None, Meta=None, dl='~/.bitcoin/blocks', Utxos=None, 
-                 localpath=None, withTS=None, endTS=None, clusterInputs=None, iC=None,
+                 localpath=None, withTS=None, endTS=None, iC=None,
                  upload=False, credentials=None, table_id=None, dataset=None, raw=False,
                  collectValue=None, cblk=None
                 ):
@@ -53,15 +63,11 @@ class BtcTxParser:
             
         
         # Meta data
-        self.currTxHash   = Meta[3] if Meta else None # Last Tx Hash processed
+        self.currTxID     = Meta[3] if Meta else None # Last Tx Hash processed
         self.currBlHash   = Meta[2] if Meta else None # Last Block Hash processed
-        self.currBl     = Meta[1] if Meta else None # Last Timestamp object of block processed
-        self.currBl_s   = int(self.currBl.timestamp()) if Meta else None # Last Timestamp
+        self.currBl       = Meta[1] if Meta else None # Last Timestamp object of block processed
+        self.currBl_s     = int(self.currBl.timestamp()) if Meta else None # Last Timestamp
         self.creationTime = Meta[0] if Meta else datetime.now() # Creation time of `this`
-
-        # Heuristic 1
-        self.clusterInputs= clusterInputs          # Bool value to cluster combined Inputs to one node
-        self.inputCluster = iC or InputHeuristic() # InputHeuristic obj. to cluster based on Inputs
 
         # Timestamp to datetime object
         if self.endTS:
@@ -84,46 +90,46 @@ class BtcTxParser:
                     # Collecting both, timestamps and values
                     if self.withTS and self.collectValue:
                         try:
-                            self.edge_list.append((self.currBl_s,self.currTxHash,_u, _v, _index, Val[_index]))
+                            self.edge_list.append((self.currBl_s,self.currTxID,_u, _v, _index, Val[_index]))
                         
                         # If len of Val != len of v then there is some crappy output script in the output
                         except IndexError:
-                            self.logger.log(f"Buggy output script @ {self.currTxHash}")
+                            self.logger.log(f"Buggy output script @ {self.currTxID}")
                             
                     # ... no values    
                     elif self.withTS:
-                        self.edge_list.append((self.currBl_s,self.currTxHash,_u, _v, _index))
+                        self.edge_list.append((self.currBl_s,self.currTxID,_u, _v, _index))
                     
                     # ... no timestamps
                     elif self.collectValue:
                         try:
-                            self.edge_list.append((self.currTxHash,_u, _v, _index, Val[_index]))
+                            self.edge_list.append((self.currTxID,_u, _v, _index, Val[_index]))
                         except IndexError:
-                            self.logger.log(f"Buggy output script @ {self.currTxHash}")
+                            self.logger.log(f"Buggy output script @ {self.currTxID}")
                             
                     # ... no timestamps and no values    
                     else:
-                        self.edge_list.append((self.currTxHash,_u, _v, _index))    
+                        self.edge_list.append((self.currTxID,_u, _v, _index))    
             
             # Input/Output mapped edges
             else:
                 for _v in v:
                     if self.withTS and self.collectValue:
                         try:
-                            self.edge_list.append((self.currBl_s,self.currTxHash,_u, _v))
+                            self.edge_list.append((self.currBl_s,self.currTxID,_u, _v))
                         except IndexError:
-                            self.logger.log(f"Buggy output script @ {self.currTxHash}")
+                            self.logger.log(f"Buggy output script @ {self.currTxID}")
                             
                     elif self.withTS:
-                        self.edge_list.append((self.currBl_s,self.currTxHash,_u, _v))
+                        self.edge_list.append((self.currBl_s,self.currTxID,_u, _v))
                         
                     elif self.collectValue:
                         try:
-                            self.edge_list.append((self.currTxHash,_u, _v))
+                            self.edge_list.append((self.currTxID,_u, _v))
                         except IndexError:
-                            self.logger.log(f"Buggy output script @ {self.currTxHash}")
+                            self.logger.log(f"Buggy output script @ {self.currTxID}")
                     else:
-                        self.edge_list.append((self.currTxHash,_u, _v))
+                        self.edge_list.append((self.currTxID,_u, _v))
         return
 
     
@@ -177,18 +183,18 @@ class BtcTxParser:
                     
                     for tx in block.transactions:
                         
-                        # ---
-                        # Custom Start or End
                         # Set `last-processed hash`
-                        self.currTxHash = tx.hash
+                        self.currTxID = tx.txid
                         
-                         # Try to start if start-transaction sT is reached
+                        # ---
+                        # Custom Start or End                      
+                        # Try to start if start-transaction sT is reached
                         if start == False:
-                            start = True if (sT == None or sT == self.currTxHash) else False
+                            start = True if (sT == None or sT == self.currTxID) else False
 
                         # Try to stop execution afer last-transaction-hash is reached
                         if eT != None and start == True:
-                            start = False if eT == self.currTxHash else True
+                            start = False if eT == self.currTxID else True
                             if start == False:
                                 _print("End Tx reached")
                                 _print("Execution terminated")
@@ -196,14 +202,14 @@ class BtcTxParser:
                         # ---
                         
                         if start:
-                            # Skip collecting outputs in low-memory mode
+                            # Skip collecting outputs in low-memory mode (since not needed)
                             if not self.raw:
                                 # Handle Outputs
                                 outs={}
                                 for o_index, output in enumerate(tx.outputs):
                                     outs[o_index] = [address.address for address in output.addresses]
 
-                                self.Utxos[tx.hash] = outs
+                                self.Utxos[tx.txid] = outs
 
                             # Handle Inputs
                             Vins = []
@@ -295,13 +301,14 @@ class BtcTxParser:
             self.logger.log("System exit...")
             self.finish_tasks()
             return self 
-     
+    
+    # Final info prints
     def finish_tasks(self):
         if self.Utxos:
             save_Utxos(self.Utxos)
         _print(f"Took {int((datetime.now()-self.creationTime).total_seconds()/60)} minutes since starting")
    
-    
+    # Print stats 
     def stats(self):
         csize = sys.getsizeof(self.edge_list)+sys.getsizeof(self.Utxos)
         _print("Edge list and Utxo mapping have {:>11,.0f} bytes".format(csize))
