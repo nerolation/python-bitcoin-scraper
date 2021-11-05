@@ -33,8 +33,8 @@ def starting_info(args):
     # if building graph
     else:
         print(colored(f"\nStarting python-bitcoin-graph version {__version__} with the following arguments:", attrs=['bold']))
-        if str(args["withvalue"]) in ["False", "None", "0"]:
-            args["withvalue"] = 0
+        if str(args["collectvalue"]) in ["False", "None", "0"]:
+            args["collectvalue"] = 0
         if str(args["directupload"]) in ["False", "None", "0"]:
             args["credentials"] = colored("deactivated", "red")
             args["tableid"] = colored("deactivated", "red")
