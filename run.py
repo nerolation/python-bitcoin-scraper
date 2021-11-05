@@ -31,8 +31,7 @@ parser.add_argument('-raw', '--raw', help="collecting raw tx inputs (saves much 
 
 
 # Raw edge-list
-parser.add_argument('-path', '--localpath', help="path to store raw edges - default: ./", default="./")
-parser.add_argument('-withts', '--withts', help="collect list of edges with timestamps - default: No", default=None)
+parser.add_argument('-path', '--targetpath', help="path to store raw edges - default: ./", default="./")
 parser.add_argument('-withv', '--withvalue', help="collect output values - default: No", default=None)
 parser.add_argument('-collectblk', '--collectblk', help="collect blk file numbers with every edge - default: No", default=None)
 
@@ -68,8 +67,7 @@ endTS     = _args.endts
 file_loc  = _args.blklocation
 utxos     = _args.utxos
 raw       = _args.raw
-localpath = _args.localpath
-withTS    = _args.withts
+targetpath = _args.targetpath
 withvalue = _args.withvalue
 cblk      = _args.collectblk
 gbq       = _args.googlebigquery
@@ -95,8 +93,8 @@ else:
     # `blk_loc` for the location where the blk files are stored
     # `raw Edges` to additionally save graph in edgeList format
     btc_graph = BtcTxParser(dl=file_loc, Utxos=utxos, endTS=endTS,
-                            raw=raw, withTS=withTS, upload=upload, 
-                            collectValue =withvalue, cblk=cblk, localpath=localpath,
+                            raw=raw, upload=upload, 
+                            cvalue =withvalue, cblk=cblk, targetpath=targetpath,
                             credentials=creds, table_id=table_id, dataset=dataset)
 
     # Start building graph
