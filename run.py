@@ -27,13 +27,13 @@ parser.add_argument('-et', '--endtx', help="end transaction (excluded) - default
 parser.add_argument('-ets', '--endts', help="end timestamp of block - default: None", default=None)
 parser.add_argument('-loc', '--blklocation', help=".blk|.csv file location - default: ~/.bitcoin/blocks", default="~/.bitcoin/blocks")
 parser.add_argument('-utxo', '--utxos', help="path to existing Utxos file - default: None", default=None)
-parser.add_argument('-raw', '--raw', help="collecting raw tx inputs (saves much RAM) - default: False", default=None)
+parser.add_argument('-raw', '--raw', help="collecting raw tx inputs (saves much RAM) - default: False",  action='store_true')
 
 
 # Raw edge-list
 parser.add_argument('-path', '--targetpath', help="path to store raw edges - default: ./", default="./")
-parser.add_argument('-withv', '--withvalue', help="collect output values - default: No", default=None)
-parser.add_argument('-collectblk', '--collectblk', help="collect blk file numbers with every edge - default: No", default=None)
+parser.add_argument('-collectvalue', '--collectvalue', help="collect output values - default: No", action='store_true')
+parser.add_argument('-collectblk', '--collectblk', help="collect blk file numbers with every edge - default: No", action='store_true')
 
 # Uploader
 if os.path.isdir(".gcpkey") and len(os.listdir(".gcpkey")) > 0:
@@ -42,10 +42,10 @@ else:
     creds = None
 
 # Direct upload
-parser.add_argument('-upload', '--directupload', help="upload edges directly(!) to google bigquery - default: False", default=None)
+parser.add_argument('-upload', '--directupload', help="upload edges directly(!) to google bigquery - default: False",  action='store_true')
 
 # Upload existing raw_blk files (no parsing)
-parser.add_argument('-gbq', '--googlebigquery', help="upload edges to google bigquery without parsing - default: False", default=None)
+parser.add_argument('-gbq', '--googlebigquery', help="upload edges to google bigquery without parsing - default: False", action='store_true')
 
 # Upload configurations (if direct upload or uploading existing files)
 parser.add_argument('-c', '--credentials', help="path to google credentials (.*json)- default: ./.gcpkey/.*json", default=creds)
@@ -68,7 +68,7 @@ file_loc  = _args.blklocation
 utxos     = _args.utxos
 raw       = _args.raw
 targetpath = _args.targetpath
-withvalue = _args.withvalue
+collectvalue = _args.collectvalue
 cblk      = _args.collectblk
 gbq       = _args.googlebigquery
 upload    = _args.directupload
@@ -94,7 +94,7 @@ else:
     # `raw Edges` to additionally save graph in edgeList format
     btc_graph = BtcTxParser(dl=file_loc, Utxos=utxos, endTS=endTS,
                             raw=raw, upload=upload, 
-                            cvalue =withvalue, cblk=cblk, targetpath=targetpath,
+                            cvalue =collectvalue, cblk=cblk, targetpath=targetpath,
                             credentials=creds, table_id=table_id, dataset=dataset)
 
     # Start building graph
