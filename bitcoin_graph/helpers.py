@@ -12,7 +12,7 @@
 # File with helper functions
 
 from datetime import datetime
-import os
+import os, sys
 import pickle
 from termcolor import colored
 import psutil
@@ -23,7 +23,7 @@ import csv
 #
 now = datetime.now().strftime("%Y%m%d_%H%M%S")
 def _print(s):
-    print(f"{datetime.now().strftime('%H:%M:%S')}  -  {s}")
+    print(f"  {datetime.now().strftime('%H:%M:%S')}   |  {s}")
 
 def get_date(folder="./output"):
     try:
@@ -122,11 +122,12 @@ def save_edge_list(parser, uploader=None, location=None):
     blkfilenr    = parser.fn        # File name
     raw          = parser.raw       # Bool if collecting raw
     cblk         = parser.cblk      # Bool if collecting blk file number
+    cvalue       = parser.cvalue    # Bool if collecting values
 
     if parser.upload:
         uploader = parser.uploader
     else:
-        location = parser.localpath
+        location = parser.targetpath
     
     # If collecting blk numbers is activated, then append it to every edge
     if cblk:
@@ -140,18 +141,12 @@ def save_edge_list(parser, uploader=None, location=None):
         
     # Direct upload to Google BigQuery without local copy
     if uploader:
-        #_print("Batch contains {:,} edges".format(len(rE)))
-        #_print("Start uploading ...")
-        success = uploader.upload_data(rE, cblk=cblk)
-        #if success and success != "stop":
-            #_print("Upload successful")
-        return success
-
+        success = uploader.upload_data(rE, cblk=cblk,cvalue=cvalue,raw=raw)
+        if success == "stop":
+            _print("Parsing stopped...")
     
     # Store locally
     else:
-        #_print("File @ raw_blk_{}{}.csv contains {:,} edges".format(blkfile, ax, len(rE)))
-        #_print("Saving raw edges...")
         if not os.path.isdir('{}/output'.format(location)):
             os.makedirs('{}/output'.format(location))
         if not os.path.isdir('{}/output/{}/rawedges/'.format(location,now)):
@@ -159,9 +154,10 @@ def save_edge_list(parser, uploader=None, location=None):
         with open("{}/output/{}/rawedges/raw_blk_{}{}.csv".format(location, now, blkfilenr, ax),"w",newline="") as f:
             cw = csv.writer(f,delimiter=",")
             cw.writerows(rE)
-        #_print("Saving successful")
+        success = True
         
     tablestats(parser)
+    return success
 
 def load_edge_list():
     _print("Loading edge list...")
@@ -198,19 +194,6 @@ def load_ALL():
 
 def MAP_V_r(m):
     return dict([(i, a) for a, i in m.items()])
-
-def print_memory_info():
-    m = psutil.virtual_memory()
-    process = psutil.Process(os.getpid())
-    col = "red" if m.total*0.75 < m.used else None
-    _print(colored("---  -------   ----------------------------", col))
-    _print(colored("--> {:>5,.1f} GB   total memory".format(m.total/1073741824), col))
-    _print(colored("--> {:>5,.1f} GB   of memory available".format(m.available/1073741824), col))
-    _print(colored("--> {:>5,.1f} GB   memory used".format(m.used/1073741824), col))
-    _print(colored("--> {:>5,.1f} GB   memory used by this process".format(process.memory_info().rss/1073741824), col)) 
-    _print(colored("--> {:>5,.1f}  %   of memory used".format(m.percent), col))
-    _print(colored("--> {:>5,.1f}  %   of memory available".format(100-m.percent), col))
-    _print(colored("---  -------   ----------------------------", col))
                  
 def used_ram():
     m = psutil.virtual_memory()
@@ -230,14 +213,9 @@ def file_number(s):
     else:
         return int(match.lstrip("0"))    
 
-def get_table_schema(cls, cblk):
-    if len(cls) == 3:
-        c = [ {'name': '{}'.format(cls[0]), 'type': 'INTEGER'},
-              {'name': '{}'.format(cls[1]), 'type': 'STRING'},
-              {'name': '{}'.format(cls[2]), 'type': 'STRING'}
-            ]
-    
-    elif len(cls) == 6:
+# BigQuery Table schema
+def get_table_schema(cls, cblk, cvalue, raw):
+    if raw:
         c = [ {'name': '{}'.format(cls[0]), 'type': 'INTEGER'},
               {'name': '{}'.format(cls[1]), 'type': 'STRING'},
               {'name': '{}'.format(cls[2]), 'type': 'STRING'},
@@ -245,56 +223,65 @@ def get_table_schema(cls, cblk):
               {'name': '{}'.format(cls[4]), 'type': 'STRING'},
               {'name': '{}'.format(cls[5]), 'type': 'INTEGER'}
             ]
-        
-    elif len(cls) >= 7:
+    else:
         c = [ {'name': '{}'.format(cls[0]), 'type': 'INTEGER'},
               {'name': '{}'.format(cls[1]), 'type': 'STRING'},
               {'name': '{}'.format(cls[2]), 'type': 'STRING'},
-              {'name': '{}'.format(cls[3]), 'type': 'INTEGER'},
-              {'name': '{}'.format(cls[4]), 'type': 'STRING'},
-              {'name': '{}'.format(cls[5]), 'type': 'INTEGER'},
-              {'name': '{}'.format(cls[6]), 'type': 'INTEGER'}
+              {'name': '{}'.format(cls[3]), 'type': 'STRING'}
             ]
+    if cvalue:
+        c.append({'name': '{}'.format("value"), 'type': 'INTEGER'})
     if cblk:
         c.append({'name': '{}'.format("blk_file_nr"), 'type': 'INTEGER'})
         
     return c
 
+# Ugly stats-printing function
 def tablestats(parser):
     rE            = parser.edge_list     # List with edges
-    blkfilenr     = parser.fn           # File nr.
+    blkfilenr     = parser.fn            # File nr.
     raw           = parser.raw           # Bool if collecting raw
     re_len        = len(rE)              # Nr. of edges
-    t0            = parser.t0
-    loop_duration = parser.loop_duration  
-    total_files   = parser.l
+    t0            = parser.t0            # Used as binary to check if it's first iteration (t0 => None)
+    loop_duration = parser.loop_duration # Array of size 15 with avg iteration duration
+    total_files   = parser.l             # Total blk files
     
+    parser.cum_edges += re_len           # Cumulated edges
+    
+    # Storage/RAM stats
+    csize = sys.getsizeof(parser.edge_list)+sys.getsizeof(parser.Utxos)
+    m = psutil.virtual_memory()
+    process = psutil.Process(os.getpid())
+    col = "red" if m.total*0.75 < m.used else None
+    
+    # Time stats
+    timestamp = datetime.now().strftime('%H:%M:%S')
+
     # Add time delta to loop duration
-    if t0:
+    if t0: # = if not first iteration
         delta = int((datetime.now()-t0).total_seconds())
-        
+    
+    # first iteration -> print heading
     else:
-        _print("{:-^9}| {:-^21} | {:-^12} | {:-^10} | {:-^15} | {:-^14}".format("","","","","","")) 
-        _print("{:^9}| {:^21} | {:^12} | {:^10} | {:^15} | {:^14}".format("","","","Processing","Avg. Processing","Estimated")) 
-        _print("{:^9}| {:^21} | {:^12} | {:^10} | {:^15} | {:^14}".format("Blk Nr.","Date Range","Edges in blk","Time","Time","End")) 
-        _print("{:-^9}| {:-^21} | {:-^12} | {:-^10} | {:-^15} | {:-^14}".format("","","","","","")) 
+        print("{:-^13}|{:-^9}|{:-^23}|{:-^14}|{:->7}|{:-^7}|{:-^10}|{:-^16}|{:-^21}|".format("","","","","","","","","")) 
+        print("{:^13}|{:^9}| {:^21} | {:^12} | {:>5} | {:^5} | {:^8} | {:^14} | {:^19} |".format("","","","","cum.","\u0394","avg. \u0394","estimated","RAM stats")) 
+        print("{:^13}|{:^9}| {:^21} | {:^12} | {:>5} | {:^5} | {:^8} | {:^14} | {:^19} |".format("timestamp","blk nr.","date range","edges/blk","edges","time","time","end","(used)")) 
+        print("{:-^13}|{:-^9}|{:-^23}|{:-^14}|{:->7}|{:-^7}|{:-^10}|{:-^16}|{:-^21}|".format("","","","","","","","","")) 
         delta = int((datetime.now()-parser.creationTime).total_seconds())
     
+    # Append loop duration and slice array
     parser.loop_duration.append(delta)
-    parser.loop_duration = parser.loop_duration[-15:]
+    parser.loop_duration = parser.loop_duration[-15:]    
+
+    # Get timestamps of first and last entry in edge list
+    t_0 = datetime.fromtimestamp(int(rE[0][0])).strftime("%d.%m.%Y")
+    t_1 = datetime.fromtimestamp(int(rE[-1][0])).strftime("%d.%m.%Y")
     
-    # If edges contain timestamp
-    try:
-        t_0 = datetime.fromtimestamp(int(rE[0][0])).strftime("%d.%m.%Y")
-        t_1 = datetime.fromtimestamp(int(rE[-1][0])).strftime("%d.%m.%Y")
- 
-    except:
-        t_0, t_1 = "-", "-"
-    
+    # Estimate end of parsing
     estimated_end = estimate_end(loop_duration, blkfilenr, total_files)
+    
+    # Avg iteration duration
     avg_loop      = int(sum(loop_duration)/len(loop_duration))
     
-    _print("{:>4}/{:<4}| {:>10}-{:>10} | {:^12,} | {:>9}s | {:>14}s | {:>14}".format(blkfilenr,total_files,t_0,t_1,re_len,delta,avg_loop,estimated_end)) 
-
-
-            
+    # Print table
+    print("{:^13}|{:>4}/{:<4}| {:>10}-{:>10} | {:^12,} | {:>4}M | {:^4}s | {:^7}s | {:>14} | {:>3}/{:<3} GiB ({:<4}%) | ".format(timestamp,blkfilenr,total_files,t_0,t_1,re_len,int(round(parser.cum_edges/int(1e6),0)),delta,avg_loop,estimated_end,int(m.used/(1024**3)),int(m.total/(1024**3)),m.percent))

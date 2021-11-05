@@ -36,21 +36,21 @@ from bitcoin_graph.helpers import *
 
 class BtcTxParser:
     
-    def __init__(self, edge_list=None, Meta=None, dl='~/.bitcoin/blocks', Utxos=None, 
-                 localpath=None, withTS=None, endTS=None, iC=None,
+    def __init__(self, edge_list=None, dl='~/.bitcoin/blocks', Utxos=None, 
+                 targetpath=None, endTS=None, iC=None,
                  upload=False, credentials=None, table_id=None, dataset=None, raw=False,
-                 collectValue=None, cblk=None
+                 cvalue=None, cblk=None
                 ):
+        self.creationTime = datetime.now()      # Creation time of `this`
         self.endTS        = endTS               # Timestamp of last block
         self.dl           = dl                  # Data location where blk files are stored
         self.Utxos        = Utxos or {}         # Mapping of Tx Hash => Utxo Indices => Output Addresses
-        self.localpath    = localpath           # Path to store a list of raw edges as csv
-        self.withTS       = withTS              # Bool value to decide whether timestamps are collected
+        self.targetpath   = targetpath          # Path to store a list of raw edges as csv
         self.edge_list    = edge_list or []     # Raw Edges list
         self.logger       = BlkLogger()         # Logging module
         self.upload       = upload              # Bool to directly upload to GCP
         self.raw          = raw                 # Bool to activate parsing without mapping Utxos to Inputs
-        self.collectValue = collectValue        # Bool to activate collecting values
+        self.cvalue       = cvalue              # Bool to activate collecting values
         self.cblk         = cblk                # Bool to activate collection blk file numbers
         if self.upload:
             self.creds    = credentials         # Path to google credentials json
@@ -60,14 +60,6 @@ class BtcTxParser:
                                        table_id=self.table_id,
                                        dataset=self.dataset,
                                        logger=self.logger) # BigQuery uploader
-            
-        
-        # Meta data
-        self.currTxID     = Meta[3] if Meta else None # Last Tx Hash processed
-        self.currBlHash   = Meta[2] if Meta else None # Last Block Hash processed
-        self.currBl       = Meta[1] if Meta else None # Last Timestamp object of block processed
-        self.currBl_s     = int(self.currBl.timestamp()) if Meta else None # Last Timestamp
-        self.creationTime = Meta[0] if Meta else datetime.now() # Creation time of `this`
 
         # Timestamp to datetime object
         if self.endTS:
@@ -77,7 +69,7 @@ class BtcTxParser:
         if self.Utxos:
             self.Utxos = load_Utxos(self.Utxos)
         
-        print("Btc Tx-Parser successfully initialized")
+        print("\nBtc Tx-Parser successfully initialized")
         time.sleep(1)
     
     
@@ -87,8 +79,8 @@ class BtcTxParser:
             if self.raw:
                 for _index, _v in enumerate(v):
                     
-                    # Collecting both, timestamps and values
-                    if self.withTS and self.collectValue:
+                    # Collecting values
+                    if self.cvalue:
                         try:
                             self.edge_list.append((self.currBl_s,self.currTxID,_u, _v, _index, self.Val[_index]))
                         
@@ -96,40 +88,21 @@ class BtcTxParser:
                         except IndexError:
                             self.logger.log(f"Buggy output script @ {self.currTxID}")
                             
-                    # ... no values    
-                    elif self.withTS:
-                        self.edge_list.append((self.currBl_s,self.currTxID,_u, _v, _index))
-                    
-                    # ... no timestamps
-                    elif self.collectValue:
-                        try:
-                            self.edge_list.append((self.currTxID,_u, _v, _index, self.Val[_index]))
-                        except IndexError:
-                            self.logger.log(f"Buggy output script @ {self.currTxID}")
-                            
-                    # ... no timestamps and no values    
+                    # ...no values    
                     else:
-                        self.edge_list.append((self.currTxID,_u, _v, _index))    
+                        self.edge_list.append((self.currBl_s,self.currTxID,_u, _v, _index))
             
             # Input/Output mapped edges
             else:
-                for _v in v:
-                    if self.withTS and self.collectValue:
+                for _index, _v in enumerate(v):
+                    if self.cvalue:
                         try:
                             self.edge_list.append((self.currBl_s,self.currTxID,_u, _v, self.Val[_index]))
                         except IndexError:
                             self.logger.log(f"Buggy output script @ {self.currTxID}")
-                            
-                    elif self.withTS:
-                        self.edge_list.append((self.currBl_s,self.currTxID,_u, _v))
-                        
-                    elif self.collectValue:
-                        try:
-                            self.edge_list.append((self.currTxID,_u, _v, self.Val[_index]))
-                        except IndexError:
-                            self.logger.log(f"Buggy output script @ {self.currTxID}")
+
                     else:
-                        self.edge_list.append((self.currTxID,_u, _v))
+                        self.edge_list.append((self.currBl_s,self.currTxID,_u, _v))
         return
 
     
@@ -137,7 +110,7 @@ class BtcTxParser:
     # Build Graph
     # Arguments: start-file sF, end-file eF, start-Tx sT, end-Tx eT
     def parse(self, sF, eF, sT, eT): 
-        #_print("Start building...")
+        print("Start parsing...")
         try:
             # Instantiate the Blockchain by giving the path to the directory
             # containing the .blk files created by bitcoind
@@ -153,7 +126,8 @@ class BtcTxParser:
             # t0 = time iteration beginns
             # loop_duration = list of delta times of iterations
             # Value received by output
-            self.l, self.t0, self.loop_duration, self.Val = len(blk_files)+file_number(sF) if sF else len(blk_files), None, [], None
+            self.l = len(blk_files)+file_number(sF) if sF else len(blk_files)
+            self.t0, self.loop_duration, self.Val, self.cum_edges = None, [], None, 0
             
             # Loop through all .blk files
             for blk_file in blk_files:
@@ -165,10 +139,8 @@ class BtcTxParser:
                 self.fn = file_number(blk_file)
                 
                 # Log progress
-                #_print(colored(f"Block File # {self.fn}/{l}", "green"))
                 self.logger.log(f"Block File # {self.fn}/{self.l}")
 
-                #_print(f"Processing {blk_file}")
                 for block in blockchain.get_unordered_blocks(blk_file):
                     
                     # Keep track of processed blocks
@@ -218,7 +190,7 @@ class BtcTxParser:
                                 # Coinbase Txs
                                 if inp.transaction_hash == "0" * 64:
                                     # Build egde from ZERO to all Transaction output addresses
-                                    Vins.append("00")
+                                    Vins.append("0")
                                     
                                 # If possible to connect inputs -> prev. outputs
                                 elif inp.transaction_hash in self.Utxos:
@@ -246,14 +218,12 @@ class BtcTxParser:
                             Addrs_o = [addr.address for output in tx.outputs for addr in output.addresses]
                             
                             # Output Value
-                            if self.collectValue:
+                            if self.cvalue:
                                 self.Val = [output.value for output in tx.outputs]
 
                             # Build edge
                             self._buildEdge(Vins, Addrs_o)
 
-                _print(f"File # {self.fn} successfully parsed")
-                
                 # Safe or upload edge list
                 success = save_edge_list(self)
 
@@ -267,15 +237,9 @@ class BtcTxParser:
                 self.edge_list = []
                 
                 # Reset t0 for next block
-                self.t0 = datetime.now()
-                
-                
-                
-                _print(f"File # {self.fn} finished")
-                
-                # Print stats after each .blk file
-                self.stats()
-                    
+                self.t0 = datetime.now()                  
+
+  
             # Finish execution 
             self.finish_tasks()
             _print("Execution finished")
@@ -295,17 +259,4 @@ class BtcTxParser:
     def finish_tasks(self):
         if self.Utxos:
             save_Utxos(self.Utxos)
-        _print(f"Took {int((datetime.now()-self.creationTime).total_seconds()/60)} minutes since starting")
-   
-    # Print stats 
-    def stats(self):
-        csize = sys.getsizeof(self.edge_list)+sys.getsizeof(self.Utxos)
-        _print("Edge list and Utxo mapping have {:>11,.0f} bytes".format(csize))
-        _print("Edge list and Utxo mapping have {:>11,.0f} MB".format((csize)/(1024**2)))
-        if len(self.Utxos) > 0:
-            _print("Utxo mapping has                {:>11,.0f} entries".format(len(self.Utxos)))
-        print_memory_info()
-        
-        
-        
-    
+        print(f"\nTook {int((datetime.now()-self.creationTime).total_seconds()/60)} minutes since starting")

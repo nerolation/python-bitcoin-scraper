@@ -44,24 +44,26 @@ class BQUploader():
             pass
     
     
-    def upload_data(self, data=None, location="europe-west3", chsz=int(1e7), cblk=None):
+    def upload_data(self, data=None, location="europe-west3", chsz=int(1e7), cblk=None, cvalue=None, raw=None):
         try:
+            # Parsing with direct upload
             if data:
-                if len(data[0]) == 3:
-                    cls = ["ts", "input_from", "output_to"]
-                elif len(data[0]) == 6:
+                if raw:
                     cls = ["ts", "txhash", "input_txhash", "vout", "output_to", "output_index"]
-                elif len(data[0]) >= 7:
-                    cls = ["ts", "txhash", "input_txhash", "vout", "output_to", "output_index", "value"]
-                    
+                else:
+                    cls = ["ts", "txhash", "input_from", "output_to"]
+                if cvalue:
+                    cls.append("value")
                 if cblk:
                     cls.append("blk_file_nr")
                 df = pd.DataFrame(data, columns=cls)
-                schema=get_table_schema(cls, cblk)
+                schema=get_table_schema(cls, cblk, cvalue, raw)
                     
-                df.to_gbq(self.table_id+"."+self.dataset, if_exists="append", location=location, chunksize=chsz, table_schema=schema)
+                df.to_gbq(self.table_id+"."+self.dataset, if_exists="append", location=location, chunksize=chsz, table_schema=schema, progress_bar=False)
                 if self.logger:
                     self.logger.log("Upload successful")
+                    
+            # Upload ONLY (no parsing)
             else:
                 files = get_csv_files(self.path)
                 r = len(files)
@@ -72,13 +74,16 @@ class BQUploader():
                 # loop over raw edges files
                 for i, blkfile in enumerate(files):
                     if "raw" in blkfile:
-                        cols = ["ts", "txhash", "input_txhash", "vout", "output_to", "output_index"]
-                        if cblk:
-                            cols.append("blk_file_nr")
-                        df = pd.read_csv(blkfile, names=cols)
+                        names = ["ts", "txhash", "input_txhash", "vout", "output_to", "output_index"]
                     else:   
-                        df = pd.read_csv(blkfile, names=["ts", "from", "output_to"])
-                    df.to_gbq(self.table_id+"."+self.dataset, if_exists="append", location=location, chunksize=chsz)
+                        names = ["ts","txhash", "from", "output_to"]
+                    if cvalue:
+                        cols.append("value")
+                    if cblk:
+                        cols.append("blk_file_nr")
+                                           
+                    df = pd.read_csv(blkfile, names=names)
+                    df.to_gbq(self.table_id+"."+self.dataset, if_exists="append", location=location, chunksize=chsz, progress_bar=False)
                     sys.stdout.write("\r\r{:<18} successfully uploaded   \n".format(blkfile.split("/")[-1]))            
                     sys.stdout.write(p(i+1))
                 print()
