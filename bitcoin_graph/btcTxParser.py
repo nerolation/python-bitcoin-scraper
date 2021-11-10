@@ -81,12 +81,7 @@ class BtcTxParser:
                     
                     # Collecting values
                     if self.cvalue:
-                        try:
                             self.edge_list.append((self.currBl_s,self.currTxID,_u, _v, _index, self.Val[_index]))
-                        
-                        # If len of Val != len of v then there is some crappy output script in the output
-                        except IndexError:
-                            self.logger.log(f"Buggy output script @ {self.currTxID}")
                             
                     # ...no values    
                     else:
@@ -96,10 +91,7 @@ class BtcTxParser:
             else:
                 for _index, _v in enumerate(v):
                     if self.cvalue:
-                        try:
-                            self.edge_list.append((self.currBl_s,self.currTxID,_u, _v, self.Val[_index]))
-                        except IndexError:
-                            self.logger.log(f"Buggy output script @ {self.currTxID}")
+                        self.edge_list.append((self.currBl_s,self.currTxID,_u, _v, self.Val[_index]))
 
                     else:
                         self.edge_list.append((self.currBl_s,self.currTxID,_u, _v))
