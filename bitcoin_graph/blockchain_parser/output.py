@@ -77,6 +77,8 @@ class Output(object):
             elif self.type == "p2wsh":
                 address = Address.from_bech32(self.script.operations[1], 0)
                 self._addresses.append(address)
+            elif self.type in ["invalid", "unknown"]:
+                self._addresses.append(self.type)
 
         return self._addresses
 
