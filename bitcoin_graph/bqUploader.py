@@ -78,9 +78,9 @@ class BQUploader():
                     else:   
                         names = ["ts","txhash", "from", "output_to"]
                     if cvalue:
-                        cols.append("value")
+                        names.append("value")
                     if cblk:
-                        cols.append("blk_file_nr")
+                        names.append("blk_file_nr")
                                            
                     df = pd.read_csv(blkfile, names=names)
                     df.to_gbq(self.table_id+"."+self.dataset, if_exists="append", location=location, chunksize=chsz, progress_bar=False)

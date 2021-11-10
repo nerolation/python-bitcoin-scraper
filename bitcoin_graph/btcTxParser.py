@@ -73,7 +73,18 @@ class BtcTxParser:
         time.sleep(1)
     
     
-    def _buildEdge(self, u, v):
+    def _buildEdge(self, u, v, values):
+        if "unknown" in v:
+            print(self.currTxID)
+        if self.currTxID == "60a20bd93aa49ab4b28d514ec10b06e1829ce6818ec06cd3aabd013ebcdc4bb1":
+            print(u,v)
+            print(self.Val)
+        elif self.currTxID == "44a0d9fe1aee1704a127c1345e4deea2ef4384fbbd3c289b46cc4b584acdf42a":
+            print(u,v)
+            print(self.Val)
+
+        else:
+            return
         for _u in set(u):
             # If collecting raw edges, then we need _index as vout too
             if self.raw:
@@ -81,7 +92,7 @@ class BtcTxParser:
                     
                     # Collecting values
                     if self.cvalue:
-                            self.edge_list.append((self.currBl_s,self.currTxID,_u, _v, _index, self.Val[_index]))
+                            self.edge_list.append((self.currBl_s,self.currTxID,_u, _v, _index, values[_index]))
                             
                     # ...no values    
                     else:
@@ -91,7 +102,7 @@ class BtcTxParser:
             else:
                 for _index, _v in enumerate(v):
                     if self.cvalue:
-                        self.edge_list.append((self.currBl_s,self.currTxID,_u, _v, self.Val[_index]))
+                        self.edge_list.append((self.currBl_s,self.currTxID,_u, _v, values[_index]))
 
                     else:
                         self.edge_list.append((self.currBl_s,self.currTxID,_u, _v))
@@ -207,14 +218,15 @@ class BtcTxParser:
                                     continue 
 
                             # Outputs
-                            Addrs_o = [addr.address for output in tx.outputs for addr in output.addresses]
-                            
-                            # Output Value
-                            if self.cvalue:
-                                self.Val = [output.value for output in tx.outputs]
+                            Outs = []
+                            Vals = []
+                            for output in tx.outputs:
+                                for address in output.addresses:
+                                    Outs.append(address)
+                                    Vals.append(output.value)
 
                             # Build edge
-                            self._buildEdge(Vins, Addrs_o)
+                            self._buildEdge(Vins, Outs, Vals)
 
                 # Safe or upload edge list
                 success = save_edge_list(self)
