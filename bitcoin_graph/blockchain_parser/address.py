@@ -14,6 +14,15 @@ from bitcoin.bech32 import CBech32Data
 from .utils import btc_ripemd160, double_sha256
 
 
+class UnknownAddress(object):
+     def __init__(self, address):
+        self._address = address
+            
+    @property
+    def address(self):
+        return self._address
+    
+
 class Address(object):
     """Represents a bitcoin address"""
 
