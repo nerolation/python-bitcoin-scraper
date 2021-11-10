@@ -112,6 +112,7 @@ class Output(object):
         """Returns the output's script type as a string"""
         # Fix for issue 11
         if not self.script.script.is_valid():
+            print("invalid")
             return "invalid"
 
         if self.is_pubkeyhash():
@@ -124,6 +125,7 @@ class Output(object):
             return "p2sh"
 
         if self.is_multisig():
+            print("multi")
             return "multisig"
 
         if self.is_return():
@@ -134,5 +136,5 @@ class Output(object):
 
         if self.is_p2wsh():
             return "p2wsh"
-
+        print("unknown")
         return "unknown"
