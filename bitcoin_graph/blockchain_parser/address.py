@@ -15,7 +15,7 @@ from .utils import btc_ripemd160, double_sha256
 
 
 class UnknownAddress(object):
-     def __init__(self, address):
+    def __init__(self, address):
         self._address = address
             
     @property
