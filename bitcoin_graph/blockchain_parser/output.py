@@ -8,6 +8,10 @@
 # No part of bitcoin-blockchain-parser, including this file, may be copied,
 # modified, propagated, or distributed except according to the terms contained
 # in the LICENSE file.
+#
+# The last `elif` statement in the `address` function was added to manage unknown 
+# addresses. This is needed to ensure that the same number of addresses and values 
+# are collected. 
 
 from .utils import decode_varint, decode_uint64
 from .script import Script
@@ -112,7 +116,6 @@ class Output(object):
         """Returns the output's script type as a string"""
         # Fix for issue 11
         if not self.script.script.is_valid():
-            print("invalid")
             return "invalid"
 
         if self.is_pubkeyhash():
@@ -136,5 +139,5 @@ class Output(object):
 
         if self.is_p2wsh():
             return "p2wsh"
-        print("unknown")
+
         return "unknown"

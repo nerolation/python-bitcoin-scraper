@@ -8,6 +8,11 @@
 # No part of bitcoin-blockchain-parser, including this file, may be copied,
 # modified, propagated, or distributed except according to the terms contained
 # in the LICENSE file.
+#
+# This file was altered in many ways in comparison to the file which it was
+# forked from. Primarily most of the logic moved into the Parser file.
+# The ordered block method was completely abondoned to use the programm
+# without leveldb installed.
 
 import os
 import mmap

@@ -8,12 +8,15 @@
 # No part of bitcoin-blockchain-parser, including this file, may be copied,
 # modified, propagated, or distributed except according to the terms contained
 # in the LICENSE file.
+#
+# This file was altered and the class `UnknownAddress` was added.
 
 from bitcoin import base58
 from bitcoin.bech32 import CBech32Data
 from .utils import btc_ripemd160, double_sha256
 
 
+# This object was newly created to manage unknown and invalid addresses
 class UnknownAddress(object):
     def __init__(self, address):
         self._address = address
@@ -21,6 +24,9 @@ class UnknownAddress(object):
     @property
     def address(self):
         return self._address
+    
+    def __repr__(self):
+        return "UnknownAddress"
     
 
 class Address(object):
