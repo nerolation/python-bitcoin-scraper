@@ -128,7 +128,6 @@ class Output(object):
             return "p2sh"
 
         if self.is_multisig():
-            print("multi")
             return "multisig"
 
         if self.is_return():
