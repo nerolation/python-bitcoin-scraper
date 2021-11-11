@@ -212,7 +212,7 @@ class BtcTxParser:
                             for output in tx.outputs:
                                 # Multisigs might contain multiple addresses
                                 for address in output.addresses:
-                                    Outs.append(address)
+                                    Outs.append(address.address)
                                     Vals.append(output.value)
 
                             # Build edge
