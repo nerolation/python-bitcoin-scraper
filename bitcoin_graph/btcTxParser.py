@@ -74,17 +74,6 @@ class BtcTxParser:
     
     
     def _buildEdge(self, u, v, values):
-        if "unknown" in v:
-            print(self.currTxID)
-        if self.currTxID == "60a20bd93aa49ab4b28d514ec10b06e1829ce6818ec06cd3aabd013ebcdc4bb1":
-            print(u,v)
-            print(self.Val)
-        elif self.currTxID == "44a0d9fe1aee1704a127c1345e4deea2ef4384fbbd3c289b46cc4b584acdf42a":
-            print(u,v)
-            print(self.Val)
-
-        else:
-            return
         for _u in set(u):
             # If collecting raw edges, then we need _index as vout too
             if self.raw:
@@ -217,10 +206,11 @@ class BtcTxParser:
                                 else:
                                     continue 
 
-                            # Outputs
+                            # Outputs and Values
                             Outs = []
                             Vals = []
                             for output in tx.outputs:
+                                # Multisigs might contain multiple addresses
                                 for address in output.addresses:
                                     Outs.append(address)
                                     Vals.append(output.value)
