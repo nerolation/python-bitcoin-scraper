@@ -49,8 +49,8 @@ parser.add_argument('-gbq', '--googlebigquery', help="upload edges to google big
 
 # Upload configurations (if direct upload or uploading existing files)
 parser.add_argument('-c', '--credentials', help="path to google credentials (.*json)- default: ./.gcpkey/.*json", default=creds)
-parser.add_argument('-tid', '--tableid', help="bigquery table id - default: btc", default="btc")
-parser.add_argument('-ds', '--dataset', help="bigquery data set name - default: bitcoin_transactions", default="bitcoin_transactions")
+parser.add_argument('-ds', '--dataset', help="bigquery data set name - default: btc", default="btc")
+parser.add_argument('-tid', '--tableid', help="bigquery table id - default: bitcoin_transactions", default="bitcoin_transactions")
 
 # Handle parameters
 _args = parser.parse_args()
