@@ -38,7 +38,7 @@ class BtcTxParser:
     
     def __init__(self, edge_list=None, dl='~/.bitcoin/blocks', Utxos=None, 
                  targetpath=None, endTS=None, iC=None,
-                 upload=False, credentials=None, table_id=None, dataset=None, raw=False,
+                 upload=False, credentials=None, dataset=None, table_id=None, raw=False,
                  cvalue=None, cblk=None
                 ):
         self.creationTime = datetime.now()      # Creation time of `this`
@@ -57,8 +57,8 @@ class BtcTxParser:
             self.table_id = table_id            # GBQ table id
             self.dataset  = dataset             # GBQ data set name
             self.uploader = BQUploader(credentials=self.creds,
-                                       table_id=self.table_id,
                                        dataset=self.dataset,
+                                       table_id=self.table_id,
                                        logger=self.logger) # BigQuery uploader
 
         # Timestamp to datetime object
