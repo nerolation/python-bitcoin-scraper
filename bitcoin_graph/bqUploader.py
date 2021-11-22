@@ -29,14 +29,14 @@ class BQUploader():
     # path: google big query path, default:output/<date>/rawedges
     # table id: google big query table id, default: btc
     # dataset: specific dataset within table, default: bitcoin_transaction
-    def __init__(self, credentials, table_id, dataset, path=None, logger=None):
+    def __init__(self, credentials, dataset, table_id, path=None, logger=None):
         
         # put google credentials into .gcpkey folder
         self.credentials = credentials
         os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = self.credentials
         self.client    = bigquery.Client()
+        self.dataset   = dataset
         self.table_id  = table_id
-        self.dataset   = dataset 
         self.logger    = logger
         try:
             self.path  = path or "output/{}/rawedges".format(get_date())
@@ -59,7 +59,7 @@ class BQUploader():
                 df = pd.DataFrame(data, columns=cls)
                 schema=get_table_schema(cls, cblk, cvalue, raw)
                     
-                df.to_gbq(self.table_id+"."+self.dataset, if_exists="append", location=location, chunksize=chsz, table_schema=schema, progress_bar=False)
+                df.to_gbq(self.dataset+"."+self.table_id, if_exists="append", location=location, chunksize=chsz, table_schema=schema, progress_bar=False)
                 if self.logger:
                     self.logger.log("Upload successful")
                     
@@ -83,7 +83,7 @@ class BQUploader():
                         names.append("blk_file_nr")
                                            
                     df = pd.read_csv(blkfile, names=names)
-                    df.to_gbq(self.table_id+"."+self.dataset, if_exists="append", location=location, chunksize=chsz, progress_bar=False)
+                    df.to_gbq(self.dataset+"."+self.table_id, if_exists="append", location=location, chunksize=chsz, progress_bar=False)
                     sys.stdout.write("\r\r{:<18} successfully uploaded   \n".format(blkfile.split("/")[-1]))            
                     sys.stdout.write(p(i+1))
                 print()
