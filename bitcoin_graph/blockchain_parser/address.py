@@ -27,7 +27,18 @@ class UnknownAddress(object):
     
     def __repr__(self):
         return "UnknownAddress"
+
+# This object was newly created to manage OP_RETURN addresses
+class OPReturnaddress(object):
+    def __init__(self, address):
+        self._address = address.lower()
+            
+    @property
+    def address(self):
+        return self._address
     
+    def __repr__(self):
+        return "OPReturnaddress"
 
 class Address(object):
     """Represents a bitcoin address"""
