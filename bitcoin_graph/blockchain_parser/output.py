@@ -9,7 +9,7 @@
 # modified, propagated, or distributed except according to the terms contained
 # in the LICENSE file.
 #
-# The last `elif` statement in the `address` function was added to manage unknown 
+# The last 2 `elif` and the `else ` statement in the `address` function were added to manage unknown 
 # addresses. This is needed to ensure that the same number of addresses and values 
 # are collected. 
 
@@ -86,6 +86,9 @@ class Output(object):
                 self._addresses.append(opreturnaddress)
             elif self.type in ["invalid", "unknown"]:
                 unknownAddress = UnknownAddress(self.type)
+                self._addresses.append(unknownAddress)
+            else:
+                unknownAddress = UnknownAddress("undefined")
                 self._addresses.append(unknownAddress)
 
         return self._addresses
