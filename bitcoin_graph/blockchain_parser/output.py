@@ -15,7 +15,7 @@
 
 from .utils import decode_varint, decode_uint64
 from .script import Script
-from .address import Address, UnknownAddress
+from .address import Address, UnknownAddress, OPReturnaddress
 
 
 class Output(object):
@@ -81,6 +81,9 @@ class Output(object):
             elif self.type == "p2wsh":
                 address = Address.from_bech32(self.script.operations[1], 0)
                 self._addresses.append(address)
+            elif self.type in ["OP_RETURN"]:
+                opreturnaddress = OPReturnaddress(self.type)
+                self._addresses.append(opreturnaddress)
             elif self.type in ["invalid", "unknown"]:
                 unknownAddress = UnknownAddress(self.type)
                 self._addresses.append(unknownAddress)
