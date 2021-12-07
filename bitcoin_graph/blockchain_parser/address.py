@@ -9,7 +9,7 @@
 # modified, propagated, or distributed except according to the terms contained
 # in the LICENSE file.
 #
-# This file was altered and the class `UnknownAddress` was added.
+# This file was altered and the class `UnknownAddress` and `OPReturnaddress` were added.
 
 from bitcoin import base58
 from bitcoin.bech32 import CBech32Data
