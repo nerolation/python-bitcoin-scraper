@@ -48,8 +48,11 @@ parser.add_argument('-upload', '--directupload', help="upload edges directly(!) 
 # Use Parquet format
 parser.add_argument('-parquet', '--parquet', help="use parquet format - default: False",  action='store_true')
 
+# Parquet file upload threshold
+parser.add_argument('-uploadthreshold', '--uploadthreshold', help="uploading threshold for parquet files - default: 5",  default=5)
+
 # Bucket name
-parser.add_argument('-bucket', '--bucket', help="bucket name to store parquet files - default: btc_<random_integer>",  default="btc_{}".format(int(datetime.now().timestamp())))
+parser.add_argument('-bucket', '--bucket', help="bucket name to store parquet files - default: btc_<timestamp>",  default="btc_{}".format(int(datetime.now().timestamp())))
 
 # Upload configurations (if direct upload or uploading existing files)
 parser.add_argument('-c', '--credentials', help="path to google credentials (.*json)- default: ./.gcpkey/.*json", default=creds)
@@ -77,6 +80,7 @@ collectvalue = _args.collectvalue
 cblk         = _args.collectblk
 upload       = _args.directupload
 use_parquet  = _args.parquet
+up_thres     = _args.uploadthreshold
 bucket       = _args.bucket
 creds        = _args.credentials
 project      = _args.project
@@ -92,8 +96,8 @@ dataset      = _args.dataset
 # `blk_loc` for the location where the blk files are stored
 # `raw Edges` to additionally save graph in edgeList format
 btc_graph = BtcTxParser(dl=file_loc, Utxos=utxos, endTS=endTS,
-                        raw=raw, upload=upload, use_parquet=use_parquet, bucket=bucket,
-                        cvalue =collectvalue, cblk=cblk, targetpath=targetpath,
+                        raw=raw, upload=upload, use_parquet=use_parquet, upload_threshold=up_thres, 
+                        bucket=bucket, cvalue =collectvalue, cblk=cblk, targetpath=targetpath,
                         credentials=creds, table_id=table_id, dataset=dataset, project=project)
 
 # Start building graph
