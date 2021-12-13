@@ -29,7 +29,7 @@ class Uploader():
     # path: google big query path, default:output/<date>/rawedges
     # table id: google big query table id, default: btc
     # dataset: specific dataset within table, default: bitcoin_transaction
-    def __init__(self, credentials, project, dataset, table_id, path=None, logger=None, bucket=None):
+    def __init__(self, credentials, project, dataset, table_id, path=None, logger=None, bucket=None, pthreshold=None):
         
         # put google credentials into .gcpkey folder
         self.credentials = credentials
@@ -40,6 +40,7 @@ class Uploader():
         self.dataset         = dataset
         self.table_id        = table_id
         self.logger          = logger
+        self.phreshold       = pthreshold
         self.bucketname      = bucket
         try:
             self.path  = path or "output/{}/rawedges".format(get_date())
@@ -64,7 +65,7 @@ class Uploader():
             cls.append("blk_file_nr")
         return cls
     
-    def upload_parquet_data(self, rE, blkfilenr, cblk,cvalue, raw, filechunksize = 0):
+    def upload_parquet_data(self, rE, blkfilenr, cblk,cvalue, raw):
         
         cls = self.get_columnnames(raw,cvalue,cblk)
     
@@ -76,7 +77,7 @@ class Uploader():
         
         current_file_list = os.listdir("temp")
         
-        if len(current_file_list) > filechunksize:
+        if len(current_file_list) > self.phreshold:
             for file in current_file_list:
                 file = "temp/"+file
                 filenr = re.search("([0-9]+)",file).group()
@@ -88,13 +89,14 @@ class Uploader():
 
                 load_job = self.client.load_table_from_uri(
                     uri, "{}.{}.{}".format(self.project,self.dataset,self.table_id), job_config=job_config
-                )  # Make an API request.
+                )  # Make an API request
 
                 load_job.result()  # Waits for the job to complete
                 self.logger.log("Uploaded blk file {}".format(file))
                 os.remove(file)    # Delete files
         else:
             pass
+        
         return True
         
     

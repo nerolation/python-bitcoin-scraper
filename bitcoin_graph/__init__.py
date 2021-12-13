@@ -40,7 +40,8 @@ def starting_info(args):
     if not str(args["parquet"]):
         args["bucket"] = 0
     print("{:<25}{:<13}".format("current wd:", __cwd__))
-    non_bools = ["startfile","blklocation","format","targetpath","credentials","project","tableid","dataset","bucket"]
+    non_bools = ["startfile","blklocation","format","targetpath","credentials",
+                 "project","tableid","dataset","bucket","uploadthreshold"]
     for k, v in zip(args.keys(), args.values()):
         if (v and k not in non_bools):
             v = colored("activated", "green")

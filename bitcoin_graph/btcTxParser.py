@@ -39,7 +39,8 @@ class BtcTxParser:
     def __init__(self, edge_list=None, dl='~/.bitcoin/blocks', Utxos=None, 
                  targetpath=None, endTS=None, iC=None, upload=False, 
                  credentials=None, dataset=None, table_id=None, project=None, 
-                 raw=False, cvalue=None, cblk=None, use_parquet=False, bucket=None
+                 raw=False, cvalue=None, cblk=None, use_parquet=False, 
+                 upload_threshold=None, bucket=None
                 ):
         self.creationTime = datetime.now()      # Creation time of `this`
         self.endTS        = endTS               # Timestamp of last block
@@ -58,13 +59,15 @@ class BtcTxParser:
             self.table_id    = table_id            # GBQ table id
             self.dataset     = dataset             # GBQ data set name
             self.use_parquet = use_parquet         # Use parquet format
+            self.parq_thres  = upload_threshold    # Threshold when parquet files will be uploaded 
             self.bucket      = bucket              # Bucket name to store parquet files
             self.uploader    = Uploader(credentials=self.creds,
                                         project    = self.project,
                                         dataset    = self.dataset,
                                         table_id   = self.table_id,
                                         logger     = self.logger,
-                                        bucket     = self.bucket 
+                                        pthreshold = self.parq_thres,
+                                        bucket     = self.bucket
                                        ) # BigQuery uploader
 
         # Timestamp to datetime object
@@ -233,8 +236,6 @@ class BtcTxParser:
                     self.finish_tasks()
                     _print("Execution finished")
                     return self   
-              
-                
                 
                 # Reset t0 for next block
                 self.t0 = datetime.now()                  
@@ -257,8 +258,10 @@ class BtcTxParser:
     
     # Final info prints
     def finish_tasks(self):
-        if len(self.raw_edges) > 0:
-            success = save_edge_list(self, force_saving=True)
+        # For Parquet mode there is a threshold when raw edges are saved
+        if self.use_parquet:
+            if len(self.edge_list) > 0:
+                success = save_edge_list(self, force_saving=True)
         if self.Utxos:
             save_Utxos(self.Utxos)
         print(f"\nTook {int((datetime.now()-self.creationTime).total_seconds()/60)} minutes since starting")
