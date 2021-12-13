@@ -14,7 +14,8 @@
 
 from bitcoin_graph import starting_info
 from bitcoin_graph.btcTxParser import *
-from bitcoin_graph.bqUploader import *
+from datetime import datetime
+import numpy as np
 import argparse
 import os
 
@@ -44,11 +45,15 @@ else:
 # Direct upload
 parser.add_argument('-upload', '--directupload', help="upload edges directly(!) to google bigquery - default: False",  action='store_true')
 
-# Upload existing raw_blk files (no parsing)
-parser.add_argument('-gbq', '--googlebigquery', help="upload edges to google bigquery without parsing - default: False", action='store_true')
+# Use Parquet format
+parser.add_argument('-parquet', '--parquet', help="use parquet format - default: False",  action='store_true')
+
+# Bucket name
+parser.add_argument('-bucket', '--bucket', help="bucket name to store parquet files - default: btc_<random_integer>",  default="btc_{}".format(int(datetime.now().timestamp())))
 
 # Upload configurations (if direct upload or uploading existing files)
 parser.add_argument('-c', '--credentials', help="path to google credentials (.*json)- default: ./.gcpkey/.*json", default=creds)
+parser.add_argument('-project', '--project', help="google cloud project name - default: btcgraph", default="btcgraph")
 parser.add_argument('-ds', '--dataset', help="bigquery data set name - default: btc", default="btc")
 parser.add_argument('-tid', '--tableid', help="bigquery table id - default: bitcoin_transactions", default="bitcoin_transactions")
 
@@ -59,45 +64,43 @@ _args = parser.parse_args()
 starting_info(vars(_args))
 
 # Static variables
-startFile = _args.startfile
-endFile   = _args.endfile
-startTx   = _args.starttx
-endTx     = _args.endtx
-endTS     = _args.endts
-file_loc  = _args.blklocation
-utxos     = _args.utxos
-raw       = _args.raw
-targetpath = _args.targetpath
+startFile    = _args.startfile
+endFile      = _args.endfile
+startTx      = _args.starttx
+endTx        = _args.endtx
+endTS        = _args.endts
+file_loc     = _args.blklocation
+utxos        = _args.utxos
+raw          = _args.raw
+targetpath   = _args.targetpath
 collectvalue = _args.collectvalue
-cblk      = _args.collectblk
-gbq       = _args.googlebigquery
-upload    = _args.directupload
-creds     = _args.credentials
-table_id  = _args.tableid
-dataset   = _args.dataset
+cblk         = _args.collectblk
+upload       = _args.directupload
+use_parquet  = _args.parquet
+bucket       = _args.bucket
+creds        = _args.credentials
+project      = _args.project
+table_id     = _args.tableid
+dataset      = _args.dataset
 # -----------------------------------------------
 
 
-# If only uploading to BigQuery
-if gbq:
-    # Initialize Big Query Uploader
-    bq = bqUpLoader(credentials=creds, path=file_loc, table_id=table_id, dataset=dataset)
-    
-    # Upload raw edges csv files to google cloud/big-query
-    bq.upload_data()
-
     
 # Start Parser
-else:
-    # Initialize btc graph object
-    # `blk_loc` for the location where the blk files are stored
-    # `raw Edges` to additionally save graph in edgeList format
-    btc_graph = BtcTxParser(dl=file_loc, Utxos=utxos, endTS=endTS,
-                            raw=raw, upload=upload, 
-                            cvalue =collectvalue, cblk=cblk, targetpath=targetpath,
-                            credentials=creds, table_id=table_id, dataset=dataset)
 
-    # Start building graph
+# Initialize btc graph object
+# `blk_loc` for the location where the blk files are stored
+# `raw Edges` to additionally save graph in edgeList format
+btc_graph = BtcTxParser(dl=file_loc, Utxos=utxos, endTS=endTS,
+                        raw=raw, upload=upload, use_parquet=use_parquet, bucket=bucket,
+                        cvalue =collectvalue, cblk=cblk, targetpath=targetpath,
+                        credentials=creds, table_id=table_id, dataset=dataset, project=project)
+
+# Start building graph
+try:
     btc_graph.parse(startFile,endFile,startTx,endTx)
-       
+    
+# Crtl + C to skip upload
+except KeyboardInterrupt:
+    print("KEYBOARD WAS INTERRUPTED")
 print("-----------------------------------------")
