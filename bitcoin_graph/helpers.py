@@ -117,13 +117,14 @@ def load_Meta():
     _print("Loading Metadata...")
     return pickle.load(open("./output/{}/Metadata.meta".format(get_date()), "rb"))
 
-def save_edge_list(parser, uploader=None, location=None):
-    rE           = parser.edge_list # List with edges
-    blkfilenr    = parser.fn        # File name
-    raw          = parser.raw       # Bool if collecting raw
-    cblk         = parser.cblk      # Bool if collecting blk file number
-    cvalue       = parser.cvalue    # Bool if collecting values
-
+def save_edge_list(parser, uploader=None, location=None, force_saving=False):
+    rE           = parser.edge_list   # List with edges
+    blkfilenr    = parser.fn          # File name
+    raw          = parser.raw         # Bool if collecting raw
+    cblk         = parser.cblk        # Bool if collecting blk file number
+    cvalue       = parser.cvalue      # Bool if collecting values
+    use_parquet  = parser.use_parquet # Bool if using parquet format
+    
     if parser.upload:
         uploader = parser.uploader
     else:
@@ -140,10 +141,18 @@ def save_edge_list(parser, uploader=None, location=None):
         ax = "_raw"
         
     # Direct upload to Google BigQuery without local copy
-    if uploader:
+    if uploader and not use_parquet:
         success = uploader.upload_data(rE, cblk=cblk,cvalue=cvalue,raw=raw)
         if success == "stop":
             _print("Parsing stopped...")
+            
+    # Using Parquet format
+    elif uploader:
+        if psutil.virtual_memory().percent or force_saving > 10:
+            success = uploader.upload_parquet_data(rE=rE, blkfilenr=blkfilenr,cblk=cblk,cvalue=cvalue,raw=raw)
+        else:
+            success = True
+            return success
     
     # Store locally
     else:
@@ -157,6 +166,9 @@ def save_edge_list(parser, uploader=None, location=None):
         success = True
         
     tablestats(parser)
+    
+    # Reset list of raw edges
+    parser.edge_list = []
     return success
 
 def load_edge_list():

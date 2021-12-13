@@ -25,7 +25,7 @@ from datetime import datetime
 from networkit import *
 
 from bitcoin_graph.blockchain_parser.blockchain import Blockchain
-from bitcoin_graph.bqUploader import BQUploader, _print
+from bitcoin_graph.uploader import Uploader, _print
 from bitcoin_graph.logger import BlkLogger
 from bitcoin_graph.helpers import *
 
@@ -37,9 +37,9 @@ from bitcoin_graph.helpers import *
 class BtcTxParser:
     
     def __init__(self, edge_list=None, dl='~/.bitcoin/blocks', Utxos=None, 
-                 targetpath=None, endTS=None, iC=None,
-                 upload=False, credentials=None, dataset=None, table_id=None, raw=False,
-                 cvalue=None, cblk=None
+                 targetpath=None, endTS=None, iC=None, upload=False, 
+                 credentials=None, dataset=None, table_id=None, project=None, 
+                 raw=False, cvalue=None, cblk=None, use_parquet=False, bucket=None
                 ):
         self.creationTime = datetime.now()      # Creation time of `this`
         self.endTS        = endTS               # Timestamp of last block
@@ -53,13 +53,19 @@ class BtcTxParser:
         self.cvalue       = cvalue              # Bool to activate collecting values
         self.cblk         = cblk                # Bool to activate collection blk file numbers
         if self.upload:
-            self.creds    = credentials         # Path to google credentials json
-            self.table_id = table_id            # GBQ table id
-            self.dataset  = dataset             # GBQ data set name
-            self.uploader = BQUploader(credentials=self.creds,
-                                       dataset=self.dataset,
-                                       table_id=self.table_id,
-                                       logger=self.logger) # BigQuery uploader
+            self.creds       = credentials         # Path to google credentials json
+            self.project     = project
+            self.table_id    = table_id            # GBQ table id
+            self.dataset     = dataset             # GBQ data set name
+            self.use_parquet = use_parquet         # Use parquet format
+            self.bucket      = bucket              # Bucket name to store parquet files
+            self.uploader    = Uploader(credentials=self.creds,
+                                        project    = self.project,
+                                        dataset    = self.dataset,
+                                        table_id   = self.table_id,
+                                        logger     = self.logger,
+                                        bucket     = self.bucket 
+                                       ) # BigQuery uploader
 
         # Timestamp to datetime object
         if self.endTS:
@@ -125,7 +131,8 @@ class BtcTxParser:
             for blk_file in blk_files:
                 
                 # Ensure to start with an empty array
-                assert(len(self.edge_list) == 0)
+                if not self.use_parquet:
+                    assert(len(self.edge_list) == 0)
                 
                 # Get integer of .blk filename (blk00001 => 1)
                 self.fn = file_number(blk_file)
@@ -188,7 +195,7 @@ class BtcTxParser:
                                 elif inp.transaction_hash in self.Utxos:
 
                                     # Inputs (Vin)
-                                    Vout = inp.transaction_index
+                                    Vout = int(inp.transaction_index)
                                     Vin = self.Utxos[inp.transaction_hash][Vout]
                                  
                                     Vins.extend(Vin)
@@ -201,7 +208,7 @@ class BtcTxParser:
                                 # If low-memory is activated and at least one ./.utxos/uxtosplit file exists
                                 # Same code as above but updating the respective uxtosplit file
                                 elif self.raw:
-                                    Vins.append((inp.transaction_hash, inp.transaction_index))
+                                    Vins.append((inp.transaction_hash, int(inp.transaction_index)))
                                 
                                 else:
                                     continue 
@@ -218,7 +225,7 @@ class BtcTxParser:
                             # Build edge
                             self._buildEdge(Vins, Outs, Vals)
 
-                # Safe or upload edge list
+                # Safe/upload and reset edge list and then reset it
                 success = save_edge_list(self)
 
                 # If something failed, user can manually stop
@@ -227,8 +234,7 @@ class BtcTxParser:
                     _print("Execution finished")
                     return self   
               
-                # Reset list of raw edges
-                self.edge_list = []
+                
                 
                 # Reset t0 for next block
                 self.t0 = datetime.now()                  
@@ -251,6 +257,8 @@ class BtcTxParser:
     
     # Final info prints
     def finish_tasks(self):
+        if len(self.raw_edges) > 0:
+            success = save_edge_list(self, force_saving=True)
         if self.Utxos:
             save_Utxos(self.Utxos)
         print(f"\nTook {int((datetime.now()-self.creationTime).total_seconds()/60)} minutes since starting")
