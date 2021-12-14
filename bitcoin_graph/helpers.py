@@ -38,84 +38,6 @@ def get_csv_files(path):
         files = [f for f in files if f.startswith("raw") and f.endswith(".csv")]
         files = map(lambda x: os.path.join(path, x), files)
         return sorted(files)    
-    
-def save_Utxos(Utxos):
-    check_folders()
-    _print("Saving Utxos...")
-    with open('./output/{}/Utxos.csv'.format(now), 'w') as f:  
-        writer = csv.writer(f)
-        writer.writerows(Utxos.items())
-
-def save_UtxoSplit(Utxos, ix=None, location='./.utxos'):
-    if not os.path.isdir(location):
-        os.makedirs(location)
-    if not os.path.isdir("{}/{}".format(location,now)):
-        os.makedirs("{}/{}".format(location,now))
-    if ix != None: 
-        fn = ix
-    else:
-        fn = len(os.listdir("{}/{}".format(location,now)))
-    with open('{}/{}/uxtosplit_{}.pkl'.format(location,now,fn), 'wb') as handle:
-        pickle.dump(Utxos, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-
-def load_UtxoSplits(location='./.utxos'):
-    l = len(os.listdir("{}/{}".format(location,now)))
-    for fn in range(l)[::-1]:
-        with open('{}/{}/uxtosplit_{}.pkl'.format(location,now,fn), 'rb') as handle:
-            #_print(f"providing {fn}")
-            yield fn, pickle.load(handle)  
-                        
-
-def load_Utxos(path='./output/{}/'.format(get_date())):
-    _print("Loading Utxos...")
-    with open(path + "/Utxos.csv", 'r') as f:  
-        return {a:eval(b) for a,b in csv.reader(f)}
-    
-def save_MAP_V(MAP_V):
-    _print("Saving MAP_V...")
-    with open('./output/{}/MAP_V.csv'.format(now), 'w') as f:  
-        writer = csv.writer(f)
-        writer.writerows(MAP_V.items())
-
-def load_MAP_V():
-    _print("Loading MAP_V...")
-    with open('./output/{}/MAP_V.csv'.format(get_date()), 'r') as f:  
-        return {a:b for a,b in csv.reader(f)}
-
-def save_V(V):
-    _print("Saving V...")
-    pickle.dump(V, open( "./output/{}/V.pkl".format(now), "wb"))
-
-def load_V():
-    _print("Loading V...")
-    return pickle.load(open("./output/{}/V.pkl".format(get_date()), "rb"))
-
-def save_G(G, graphFormat):
-    _print("Saving G...")
-    if graphFormat == "binary":
-        _print("Saving G in networkit binary format...")
-        writeGraph(G,"./output/{}/G.graph".format(now), Format.NetworkitBinary, chunks=16, NetworkitBinaryWeights=0)
-        _print("Additionally store graph in edge list format? (y/n)")
-        if input() != "n":
-            _print("Saving G in edge-list format...")
-            writeGraph(G,"./output/{}/G_raw.edges".format(now), Format.EdgeListSpaceZero)              
-    else:
-        _print("Saving G in edge-list format...")
-        writeGraph(G,"./output/{}/G_raw.edges".format(now), Format.EdgeListSpaceZero)
- 
-    
-def load_G():
-    _print("Loading G...")
-    return readGraph("./output/{}/G.graph".format(get_date()), Format.NetworkitBinary)
-
-def save_Meta(M):
-    _print("Saving Metadata...")
-    pickle.dump(M, open( "./output/{}/Metadata.meta".format(now), "wb"))
-
-def load_Meta():
-    _print("Loading Metadata...")
-    return pickle.load(open("./output/{}/Metadata.meta".format(get_date()), "rb"))
 
 def save_edge_list(parser, uploader=None, location=None, force_saving=False):
     rE           = parser.edge_list   # List with edges
@@ -148,10 +70,11 @@ def save_edge_list(parser, uploader=None, location=None, force_saving=False):
             
     # Using Parquet format
     elif uploader:
-        if psutil.virtual_memory().percent > 10 or force_saving:
-            success = uploader.upload_parquet_data(rE=rE, blkfilenr=blkfilenr,cblk=cblk,cvalue=cvalue,raw=raw)
+        if used_ram() > 35 or force_saving:
+            success = uploader.upload_parquet_data(rE=rE,blkfilenr=blkfilenr,cblk=cblk,cvalue=cvalue,raw=raw)
         else:
             success = True
+            print("skipped")
             return success
     
     # Store locally
@@ -170,42 +93,6 @@ def save_edge_list(parser, uploader=None, location=None, force_saving=False):
     # Reset list of raw edges
     parser.edge_list = []
     return success
-
-def load_edge_list():
-    _print("Loading edge list...")
-    for chunk in pd.read_csv("./output/{}/G_raw.G".format(get_date()), 
-                             header=None, chunksize=1e6):
-        _print("more ...")
-        yield list(chunk.to_records(index=False))
-
-def check_folders():
-    if not os.path.isdir('./output/'):
-        _print("Creating output folder...")
-        os.makedirs('./output')
-    if not os.path.isdir('./output/{}/'.format(now)):
-        _print("Creating output/{} folder...".format(now))
-        os.makedirs('./output/{}/'.format(now))
-        
-def save_ALL(G,graphFormat,V,Utxos,MAP_V,Meta):
-    check_folders()
-    save_G(G, graphFormat)
-    save_V(V)
-    save_Utxos(Utxos)
-    save_MAP_V(MAP_V)
-    save_Meta(Meta)
-    _print("Saving successful")
-    
-def load_ALL():
-    G=load_G()
-    V=load_V()
-    Utxos=load_Utxos()
-    MAP_V=load_MAP_V()
-    Meta=load_Meta()
-    _print("Loading successful")
-    return G,V,Utxos,MAP_V,Meta
-
-def MAP_V_r(m):
-    return dict([(i, a) for a, i in m.items()])
                  
 def used_ram():
     m = psutil.virtual_memory()
@@ -270,16 +157,17 @@ def tablestats(parser):
     timestamp = datetime.now().strftime('%H:%M:%S')
 
     # Add time delta to loop duration
-    if t0: # = if not first iteration
+    if parser.first_iteration: # = if not first iteration
         delta = int((datetime.now()-t0).total_seconds())
     
-    # first iteration -> print heading
+    # First iteration -> print heading
     else:
         print("{:-^13}|{:-^9}|{:-^23}|{:-^14}|{:->7}|{:-^7}|{:-^10}|{:-^16}|{:-^21}|".format("","","","","","","","","")) 
         print("{:^13}|{:^9}| {:^21} | {:^12} | {:>5} | {:^5} | {:^8} | {:^14} | {:^19} |".format("","","","","cum.","\u0394","avg. \u0394","estimated","RAM stats")) 
         print("{:^13}|{:^9}| {:^21} | {:^12} | {:>5} | {:^5} | {:^8} | {:^14} | {:^19} |".format("timestamp","blk nr.","date range","edges/blk","edges","time","time","end","(used)")) 
         print("{:-^13}|{:-^9}|{:-^23}|{:-^14}|{:->7}|{:-^7}|{:-^10}|{:-^16}|{:-^21}|".format("","","","","","","","","")) 
         delta = int((datetime.now()-parser.creationTime).total_seconds())
+        parser.first_iteration = False
     
     # Append loop duration and slice array
     parser.loop_duration.append(delta)

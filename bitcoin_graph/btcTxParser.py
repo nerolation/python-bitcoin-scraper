@@ -27,7 +27,7 @@ from networkit import *
 from bitcoin_graph.blockchain_parser.blockchain import Blockchain
 from bitcoin_graph.uploader import Uploader, _print
 from bitcoin_graph.logger import BlkLogger
-from bitcoin_graph.helpers import *
+from bitcoin_graph.helpers import _print, save_edge_list, file_number
 
 
 # ----------
@@ -129,6 +129,7 @@ class BtcTxParser:
             # Value received by output
             self.l = len(blk_files)+file_number(sF)-1 if sF else len(blk_files)-1
             self.t0, self.loop_duration, self.Val, self.cum_edges = None, [], None, 0
+            self.fist_iteration = True
             
             # Loop through all .blk files
             for blk_file in blk_files:
