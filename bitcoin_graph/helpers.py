@@ -148,7 +148,7 @@ def save_edge_list(parser, uploader=None, location=None, force_saving=False):
             
     # Using Parquet format
     elif uploader:
-        if psutil.virtual_memory().percent or force_saving > 10:
+        if psutil.virtual_memory().percent > 10 or force_saving:
             success = uploader.upload_parquet_data(rE=rE, blkfilenr=blkfilenr,cblk=cblk,cvalue=cvalue,raw=raw)
         else:
             success = True
