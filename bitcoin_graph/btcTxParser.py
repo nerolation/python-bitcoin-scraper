@@ -129,7 +129,7 @@ class BtcTxParser:
             # Value received by output
             self.l = len(blk_files)+file_number(sF)-1 if sF else len(blk_files)-1
             self.t0, self.loop_duration, self.Val, self.cum_edges = None, [], None, 0
-            self.fist_iteration = True
+            self.first_iteration = True
             
             # Loop through all .blk files
             for blk_file in blk_files:

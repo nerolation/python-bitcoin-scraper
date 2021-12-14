@@ -70,7 +70,7 @@ def save_edge_list(parser, uploader=None, location=None, force_saving=False):
             
     # Using Parquet format
     elif uploader:
-        if used_ram() > 35 or force_saving:
+        if used_ram() > 5 or force_saving:
             success = uploader.upload_parquet_data(rE=rE,blkfilenr=blkfilenr,cblk=cblk,cvalue=cvalue,raw=raw)
         else:
             success = True
@@ -157,7 +157,7 @@ def tablestats(parser):
     timestamp = datetime.now().strftime('%H:%M:%S')
 
     # Add time delta to loop duration
-    if parser.first_iteration: # = if not first iteration
+    if not parser.first_iteration: # = if not first iteration
         delta = int((datetime.now()-t0).total_seconds())
     
     # First iteration -> print heading
