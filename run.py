@@ -49,7 +49,7 @@ parser.add_argument('-upload', '--directupload', help="upload edges directly(!) 
 parser.add_argument('-parquet', '--parquet', help="use parquet format - default: False",  action='store_true')
 
 # Parquet file upload threshold
-parser.add_argument('-upthres', '--uploadthreshold', help="uploading threshold for parquet files - default: 5",  default=5)
+parser.add_argument('-ut', '--uploadthreshold', help="uploading threshold for parquet files - default: 5",  default=5)
 
 # Bucket name
 parser.add_argument('-bucket', '--bucket', help="bucket name to store parquet files - default: btc_<timestamp>",  default="btc_{}".format(int(datetime.now().timestamp())))
