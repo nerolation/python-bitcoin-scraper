@@ -23,16 +23,14 @@ import os
 parser = argparse.ArgumentParser(formatter_class=lambda prog: argparse.HelpFormatter(prog,max_help_position=60))
 parser.add_argument('-sf', '--startfile', help=".blk start file (included) - default: blk00000.dat", default="blk00000.dat")
 parser.add_argument('-ef', '--endfile', help=".blk end file (excluded) - default: None", default=None)
-parser.add_argument('-st', '--starttx', help="start transaction (included) - default: None", default=None)
-parser.add_argument('-et', '--endtx', help="end transaction (excluded) - default: None", default=None)
+parser.add_argument('-st', '--starttx', help="start transaction id (included) - default: None", default=None)
+parser.add_argument('-et', '--endtx', help="end transaction id (excluded) - default: None", default=None)
 parser.add_argument('-ets', '--endts', help="end timestamp of block - default: None", default=None)
 parser.add_argument('-loc', '--blklocation', help=".blk|.csv file location - default: ~/.bitcoin/blocks", default="~/.bitcoin/blocks")
 parser.add_argument('-utxo', '--utxos', help="path to existing Utxos file - default: None", default=None)
-parser.add_argument('-raw', '--raw', help="collecting raw tx inputs (saves much RAM) - default: False",  action='store_true')
-
 
 # Raw edge-list
-parser.add_argument('-path', '--targetpath', help="path to store raw edges - default: ./", default="./")
+parser.add_argument('-path', '--targetpath', help="path to store raw edges locally - default: ./", default="./")
 parser.add_argument('-collectvalue', '--collectvalue', help="collect output values - default: No", action='store_true')
 parser.add_argument('-collectblk', '--collectblk', help="collect blk file numbers with every edge - default: No", action='store_true')
 
@@ -43,7 +41,7 @@ else:
     creds = None
 
 # Direct upload
-parser.add_argument('-upload', '--directupload', help="upload edges directly(!) to google bigquery - default: False",  action='store_true')
+parser.add_argument('-upload', '--upload', help="upload edges to google bigquery - default: False",  action='store_true')
 
 # Use Parquet format
 parser.add_argument('-parquet', '--parquet', help="use parquet format - default: False",  action='store_true')
@@ -74,11 +72,10 @@ endTx        = _args.endtx
 endTS        = _args.endts
 file_loc     = _args.blklocation
 utxos        = _args.utxos
-raw          = _args.raw
 targetpath   = _args.targetpath
 collectvalue = _args.collectvalue
 cblk         = _args.collectblk
-upload       = _args.directupload
+upload       = _args.upload
 use_parquet  = _args.parquet
 up_thres     = _args.uploadthreshold
 bucket       = _args.bucket
@@ -96,7 +93,7 @@ dataset      = _args.dataset
 # `blk_loc` for the location where the blk files are stored
 # `raw Edges` to additionally save graph in edgeList format
 btc_graph = BtcTxParser(dl=file_loc, Utxos=utxos, endTS=endTS,
-                        raw=raw, upload=upload, use_parquet=use_parquet, upload_threshold=up_thres, 
+                        upload=upload, use_parquet=use_parquet, upload_threshold=up_thres, 
                         bucket=bucket, cvalue =collectvalue, cblk=cblk, targetpath=targetpath,
                         credentials=creds, table_id=table_id, dataset=dataset, project=project)
 
