@@ -3,16 +3,17 @@
 **in progress**
 
 
-**Bitcoin-Python-Graph** represents a **command line tool** to parse transactions directly from raw blk files.
+**Bitcoin-Python-Graph** represents a **command line tool** to parse transactions directly from raw blk files using Python.
 
 ---
 
-The output files are in csv or parquet format and can be directly synced to Google BigQuery.
+*The output files are in **csv** or **parquet format** and can be directly synced to Google BigQuery.*
+
 By default the following columns are collected:
 
 - ts (timestamp)
-- txhash (transaction id)
-- input_txhash (tx hash of input)
+- tx_id (transaction id)
+- input_tx_id (tx id of input)
 - vout (input vout)
 - output_to (`to` address)
 - output_index (index of output address)
@@ -20,7 +21,7 @@ By default the following columns are collected:
 - (optional) blk file (blk file number)
 
 
-**Note: In order to save RAM the transaction inputs are represented by a tx id and the vout!**
+**Note: In order to save RAM the transaction inputs are represented by a tx id and the vout!** 
 
 ## Usage
 
@@ -102,8 +103,10 @@ pip install -r requirements.txt
 
 ## Examples
 
+---
 
-### Unordered Blocks
+**Note: Currently it takes about 4 days to parse and upload the complete blockchain!** 
+
 
 
 
