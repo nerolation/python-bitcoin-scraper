@@ -21,7 +21,7 @@ By default the following columns are collected:
 - (optional) blk file (blk file number)
 
 
-**Note: In order to save RAM the transaction inputs are represented by a tx id and the vout!** 
+**Note: The transaction inputs are represented by a tx id and the vout!** 
 
 ## Usage
 
@@ -48,10 +48,8 @@ optional arguments:
   -project PROJECT, --project PROJECT                     google cloud project name - default: btcgraph
   -ds DATASET, --dataset DATASET                          bigquery data set name - default: btc
   -tid TABLEID, --tableid TABLEID                         bigquery table id - default: bitcoin_transactions
-
-
 ```
-
+If uploading is activated, it is highly recommended to consider the integrated parquet-format conversion before uploading the data to the Google Cloud in order to reduce bandwidth usage. This can easily be done using the  `--parquet` flag.
 
 ---
 
