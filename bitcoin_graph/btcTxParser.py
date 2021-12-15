@@ -19,15 +19,12 @@
 import os
 import sys
 import time
-
-from termcolor import colored
 from datetime import datetime
-from networkit import *
 
 from bitcoin_graph.blockchain_parser.blockchain import Blockchain
 from bitcoin_graph.uploader import Uploader, _print
 from bitcoin_graph.logger import BlkLogger
-from bitcoin_graph.helpers import _print, save_edge_list, file_number
+from bitcoin_graph.helpers import _print, save_edge_list, file_number, print_output_header
 
 
 # ----------
@@ -35,22 +32,20 @@ from bitcoin_graph.helpers import _print, save_edge_list, file_number
 #
 
 class BtcTxParser:
-    
+
     def __init__(self, edge_list=None, dl='~/.bitcoin/blocks', Utxos=None, 
                  targetpath=None, endTS=None, iC=None, upload=False, 
                  credentials=None, dataset=None, table_id=None, project=None, 
-                 raw=False, cvalue=None, cblk=None, use_parquet=False, 
+                 cvalue=None, cblk=None, use_parquet=False, 
                  upload_threshold=None, bucket=None
                 ):
         self.creationTime = datetime.now()      # Creation time of `this`
         self.endTS        = endTS               # Timestamp of last block
         self.dl           = dl                  # Data location where blk files are stored
-        self.Utxos        = Utxos or {}         # Mapping of Tx Hash => Utxo Indices => Output Addresses
         self.targetpath   = targetpath          # Path to store a list of raw edges as csv
         self.edge_list    = edge_list or []     # Raw Edges list
         self.logger       = BlkLogger()         # Logging module
         self.upload       = upload              # Bool to directly upload to GCP
-        self.raw          = raw                 # Bool to activate parsing without mapping Utxos to Inputs
         self.cvalue       = cvalue              # Bool to activate collecting values
         self.cblk         = cblk                # Bool to activate collection blk file numbers
         if self.upload:
@@ -83,34 +78,35 @@ class BtcTxParser:
     
     
     def _buildEdge(self, u, v, values):
+        '''Build edge by looping over the inputs `u` and the outputs `v`
+           and creating edges with every combination.
+        '''
         for _u in set(u):
-            # If collecting raw edges, then we need _index as vout too
-            if self.raw:
-                for _index, _v in enumerate(v):
-                    
-                    # Collecting values
-                    if self.cvalue:
-                            self.edge_list.append((self.currBl_s,self.currTxID,_u, _v, _index, values[_index]))
-                            
-                    # ...no values    
-                    else:
-                        self.edge_list.append((self.currBl_s,self.currTxID,_u, _v, _index))
-            
-            # Input/Output mapped edges
-            else:
-                for _index, _v in enumerate(v):
-                    if self.cvalue:
-                        self.edge_list.append((self.currBl_s,self.currTxID,_u, _v, values[_index]))
+            for _index, _v in enumerate(v):
 
-                    else:
-                        self.edge_list.append((self.currBl_s,self.currTxID,_u, _v))
-        return
+                # Collecting values
+                if self.cvalue:
+                    self.edge_list.append((self.currBl_s,
+                                           self.currTxID,
+                                           _u, 
+                                           _v, 
+                                           _index, 
+                                           values[_index]))
 
-    
- 
+                # ...no values    
+                else:
+                    self.edge_list.append((self.currBl_s,
+                                           self.currTxID,
+                                           _u, 
+                                           _v, 
+                                           _index))
+        return None
+
     # Build Graph
-    # Arguments: start-file sF, end-file eF, start-Tx sT, end-Tx eT
     def parse(self, sF, eF, sT, eT): 
+        '''Parising function that starts the parsing process.
+           Arguments: start file `sF`, end file `eF`, start tx `sT` and a end tx `eT`.
+        '''
         print("Start parsing...")
         try:
             # Instantiate the Blockchain by giving the path to the directory
@@ -129,7 +125,7 @@ class BtcTxParser:
             # Value received by output
             self.l = len(blk_files)+file_number(sF)-1 if sF else len(blk_files)-1
             self.t0, self.loop_duration, self.Val, self.cum_edges = None, [], None, 0
-            self.first_iteration = True
+            print_output_header(self)
             
             # Loop through all .blk files
             for blk_file in blk_files:
@@ -157,8 +153,10 @@ class BtcTxParser:
                             continue
                     
                     for tx in block.transactions:
+                        if len(self.edge_list) > 10000:
+                            continue
                         
-                        # Set `last-processed hash`
+                        # Set `last-processed tx id`
                         self.currTxID = tx.txid
                         
                         # ---
@@ -167,7 +165,7 @@ class BtcTxParser:
                         if start == False:
                             start = True if (sT == None or sT == self.currTxID) else False
 
-                        # Try to stop execution afer last-transaction-hash is reached
+                        # Try to stop execution afer last-transaction-id is reached
                         if eT != None and start == True:
                             start = False if eT == self.currTxID else True
                             if start == False:
@@ -176,46 +174,21 @@ class BtcTxParser:
                                 sys.exit(1)
                         # ---
                         
+                        # Start variable used for custom starts
                         if start:
-                            # Skip collecting outputs in low-memory mode (since not needed)
-                            if not self.raw:
-                                # Handle Outputs
-                                outs={}
-                                for o_index, output in enumerate(tx.outputs):
-                                    outs[o_index] = [address.address for address in output.addresses]
-
-                                self.Utxos[tx.txid] = outs
 
                             # Handle Inputs
                             Vins = []
                             for inp in tx.inputs:
 
                                 # Coinbase Txs
-                                if inp.transaction_hash == "0" * 64:
+                                if inp.transaction_id == "0" * 64:
                                     # Build egde from ZERO to all Transaction output addresses
                                     Vins.append("0")
-                                    
-                                # If possible to connect inputs -> prev. outputs
-                                elif inp.transaction_hash in self.Utxos:
-
-                                    # Inputs (Vin)
-                                    Vout = int(inp.transaction_index)
-                                    Vin = self.Utxos[inp.transaction_hash][Vout]
-                                 
-                                    Vins.extend(Vin)
-                                    
-                                    # Clean MAP
-                                    del self.Utxos[inp.transaction_hash][Vout]
-                                    if len(self.Utxos[inp.transaction_hash]) == 0:
-                                        del self.Utxos[inp.transaction_hash]
-                                
-                                # If low-memory is activated and at least one ./.utxos/uxtosplit file exists
-                                # Same code as above but updating the respective uxtosplit file
-                                elif self.raw:
-                                    Vins.append((inp.transaction_hash, int(inp.transaction_index)))
-                                
+                               
+                                # Append transaction id and vout 
                                 else:
-                                    continue 
+                                    Vins.append((inp.transaction_id, int(inp.transaction_index)))
 
                             # Outputs and Values
                             Outs = []
@@ -228,7 +201,9 @@ class BtcTxParser:
 
                             # Build edge
                             self._buildEdge(Vins, Outs, Vals)
-
+                
+                if not self.use_parquet:
+                    _print(f"blk file nr. {self.fn} successfully parsed...", end='\r')
                 # Safe/upload and reset edge list and then reset it
                 success = save_edge_list(self)
 
@@ -265,4 +240,6 @@ class BtcTxParser:
                 success = save_edge_list(self, force_saving=True)
         if self.Utxos:
             save_Utxos(self.Utxos)
-        print(f"\nTook {int((datetime.now()-self.creationTime).total_seconds()/60)} minutes since starting")
+        execution_time = int((datetime.now() \
+                              - self.creationTime).total_seconds()/60)
+        print(f"\nTook {execution_time} minutes since starting")

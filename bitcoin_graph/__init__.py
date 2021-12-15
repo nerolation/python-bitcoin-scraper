@@ -21,27 +21,30 @@ __cwd__     = os.path.abspath(os.getcwd())
 # print current configuration into console
 def starting_info(args):
 
-    print(colored(f"\nStarting python-bitcoin-graph version {__version__} with the following arguments:", attrs=['bold']))
+    print(colored(f"\nStarting python-bitcoin-graph version {__version__} "\
+                  "with the following arguments:\n", attrs=['bold']))
     if str(args["collectvalue"]) in ["False", "None", "0"]:
         args["collectvalue"] = 0
-    if str(args["directupload"]) in ["False", "None", "0"]:
+    if str(args["upload"]) in ["False", "None", "0"]:
         args["credentials"] = colored("deactivated", "red")
         args["project"] = colored("deactivated", "red")
         args["tableid"] = colored("deactivated", "red")
         args["dataset"] = colored("deactivated", "red")
-        args["directupload"] = 0
+        args["upload"] = 0
     else:
         args["targetpath"] = colored("deactivated", "red")
+        
     # Custom changes
-    if args["raw"] in ["False", "None", "0"]:
-        args["raw"] = 0
+    if args["parquet"]:
+        print(colored("Parquet format is activated - Files will be converted to parquet "\
+                      "format before syncing to the Google cloud\n", "green",attrs=['bold']))
     else:
-        print(colored("Raw parsing is activated - Inputs will represent a Tx hash and the Vout\n", "green",attrs=['bold']))
-    if not str(args["parquet"]):
         args["bucket"] = 0
     print("{:<25}{:<13}".format("current wd:", __cwd__))
     non_bools = ["startfile","blklocation","format","targetpath","credentials",
                  "project","tableid","dataset","bucket","uploadthreshold"]
+    
+    # Manage bool arguments
     for k, v in zip(args.keys(), args.values()):
         if (v and k not in non_bools):
             v = colored("activated", "green")
@@ -56,13 +59,14 @@ def starting_info(args):
     print("\n")  
     
     if args["parquet"]:
-        if not os.path.isdir('./temp'):
-            os.makedirs('./temp')
-        elif len(os.listdir('./temp')) > 0:
-            delete = input("There are already files in the ./temp folder\nDo you want to delet them? (y/n)\n")
+        if not os.path.isdir('./.temp'):
+            os.makedirs('./.temp')
+        elif len(os.listdir('./.temp')) > 0:
+            delete = input("There are already files in the ./.temp folder\n"\
+                           "Do you want to delet them? (y/n)\n")
             if delete == "y":
-                for tempfile in os.listdir('./temp'):
-                    os.remove('./temp/'+tempfile) 
+                for tempfile in os.listdir('./.temp'):
+                    os.remove('./.temp/'+tempfile) 
             print("\r\r           ")
     for i in range(2):
         for i in ["|", "/", "-", "\\"]:

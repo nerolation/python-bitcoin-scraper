@@ -20,7 +20,7 @@ import time
 import pandas as pd
 import pandas_gbq
 
-from bitcoin_graph.helpers import _print, get_csv_files, get_date, get_table_schema
+from bitcoin_graph.helpers import _print, get_date, get_table_schema
 #
 # Big Query Uploader
 class Uploader():
@@ -40,7 +40,7 @@ class Uploader():
         self.dataset         = dataset
         self.table_id        = table_id
         self.logger          = logger
-        self.phreshold       = pthreshold
+        self.threshold       = pthreshold
         self.bucketname      = bucket
         try:
             self.path  = path or "output/{}/rawedges".format(get_date())
@@ -54,32 +54,31 @@ class Uploader():
             bucket = self.storage_client.create_bucket(self.bucketname,location="EUROPE-WEST3")
             print("Bucket created")
         
-    def get_columnnames(self, raw, cvalue, cblk):
-        if raw:
-            cls = ["ts", "txhash", "input_txhash", "vout", "output_to", "output_index"]
-        else:
-            cls = ["ts", "txhash", "input_from", "output_to"]
+    def get_columnnames(self, cvalue, cblk):
+        
+        # Default column names
+        cls = ["ts", "tx_id", "input_tx_id", "vout", "output_to", "output_index"]
         if cvalue:
             cls.append("value")
         if cblk:
             cls.append("blk_file_nr")
         return cls
     
-    def upload_parquet_data(self, rE, blkfilenr, cblk,cvalue, raw):
+    def upload_parquet_data(self, rE, blkfilenr, cblk,cvalue):
         
-        cls = self.get_columnnames(raw,cvalue,cblk)
+        cls = self.get_columnnames(cvalue,cblk)
     
         df = pd.DataFrame(rE, columns=cls)
         df["vout"] = df["vout"].astype('int') 
 
-        df.to_parquet("temp/blks_{}.parquet".format(blkfilenr))
-        self.logger.log("Saved temp/blks_{}.parquet".format(blkfilenr))
+        df.to_parquet(".temp/blks_{}.parquet".format(blkfilenr))
+        self.logger.log("Saved .temp/blks_{}.parquet".format(blkfilenr))
         
-        current_file_list = os.listdir("temp")
+        current_file_list = os.listdir(".temp")
         
-        if len(current_file_list) > self.phreshold:
+        if len(current_file_list) > self.threshold:
             for file in current_file_list:
-                file = "temp/"+file
+                file = ".temp/" + file
                 filenr = re.search("([0-9]+)",file).group()
                 bucket = self.storage_client.bucket(self.bucketname)
                 blob = bucket.blob("blks_{}.parquet".format(filenr))
@@ -90,7 +89,7 @@ class Uploader():
                 load_job = self.client.load_table_from_uri(
                     uri, "{}.{}.{}".format(self.project,self.dataset,self.table_id), job_config=job_config
                 )  # Make an API request
-
+                _print(f"{file} uploaded", end="\r")
                 load_job.result()  # Waits for the job to complete
                 self.logger.log("Uploaded blk file {}".format(file))
                 os.remove(file)    # Delete files
@@ -100,23 +99,27 @@ class Uploader():
         return True
         
     
-    def upload_data(self, data=None, location="europe-west3", chsz=int(1e7), cblk=None, cvalue=None, raw=None):
+    def upload_data(self, data=None, location="europe-west3", chsz=int(1e7), cblk=None, cvalue=None):
         try:
             # Parsing with direct upload
-            if data:
-                cls = self.get_columnnames(raw,cvalue,cblk)
-                df = pd.DataFrame(data, columns=cls)
-                schema=get_table_schema(cls, cblk, cvalue, raw)
-                    
-                df.to_gbq(self.dataset+"."+self.table_id, if_exists="append", location=location, chunksize=chsz, table_schema=schema, progress_bar=False)
-                if self.logger:
-                    self.logger.log("Upload successful")
+            cls = self.get_columnnames(cvalue,cblk)
+            df = pd.DataFrame(data, columns=cls)
+            schema=get_table_schema(cls, cblk, cvalue)
+            cloud_path = self.dataset+"."+self.table_id
+            df.to_gbq(cloud_path, 
+                      if_exists="append", 
+                      location=location, 
+                      chunksize=chsz, 
+                      table_schema=schema, 
+                      progress_bar=False)
+            if self.logger:
+                self.logger.log("Upload successful")
             return True
         
         # Crtl + C to skip upload
         except KeyboardInterrupt:
             self.logger.log("Upload skipped")
-            _print("Upload skipped ...")
+            _print("\nUpload skipped ...")
             answer = None
             while answer not in ["n", "y", "re-upload"]:
                 _print("Do you want to continue? (y/n/re-upload)")
@@ -136,9 +139,10 @@ class Uploader():
         # Catch other errors and let user set time to wait
         except Exception as e:
             self.logger.log("Something failed")
-            _print("Something failed")
+            _print("\nSomething failed")
             _print(e)
-            _print("Do you want to wait for some seconds to try again? (please input seconds to wait)")
+            _print("Do you want to wait for some seconds to try again? "\
+                   "(please input seconds to wait)")
             wait = int(input())
             _print(f"Waiting for {wait} seconds")
             time.sleep(wait)
