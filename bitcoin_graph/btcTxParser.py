@@ -228,10 +228,9 @@ class BtcTxParser:
     
     # Final info prints
     def finish_tasks(self):
-        # For Parquet mode there is a threshold when raw edges are saved
-        if self.use_parquet:
-            if len(self.edge_list) > 0:
-                success = save_edge_list(self, force_saving=True)
+        # Make sure everything is saved
+        if len(self.edge_list) > 0:
+            success = save_edge_list(self)
         execution_time = int((datetime.now() \
                               - self.creationTime).total_seconds()/60)
         print(f"\nTook {execution_time} minutes since starting")
