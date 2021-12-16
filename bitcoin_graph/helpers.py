@@ -137,8 +137,8 @@ def print_output_header(parser):
                                                      "",
                                                      "",
                                                      "cum.",
-                                                     "\u0394",
-                                                     "avg. \u0394",
+                                                     "\u0394 ",
+                                                     "avg. \u0394 ",
                                                      "estimated",
                                                      "RAM stats")) 
     print("{:^13}|{:^9}| {:^21} | {:^12} | {:>5} |"\
@@ -166,7 +166,7 @@ def tablestats(parser):
     parser.cum_edges += re_len           # Cumulated edges
     
     # Storage/RAM stats
-    csize = sys.getsizeof(parser.edge_list)+sys.getsizeof(parser.Utxos)
+    csize = sys.getsizeof(parser.edge_list)
     m = psutil.virtual_memory()
     used_ram = m.total/(1024**3)-m.available/(1024**3)
     process = psutil.Process(os.getpid())
