@@ -36,7 +36,6 @@ optional arguments:
   -et ENDTX, --endtx ENDTX                                end transaction id (excluded) - default: None
   -ets ENDTS, --endts ENDTS                               end timestamp of block - default: None
   -loc BLKLOCATION, --blklocation BLKLOCATION             .blk|.csv file location - default: ~/.bitcoin/blocks
-  -utxo UTXOS, --utxos UTXOS                              path to existing Utxos file - default: None
   -path TARGETPATH, --targetpath TARGETPATH               path to store raw edges locally - default: ./
   -collectvalue, --collectvalue                           collect output values - default: No
   -collectblk, --collectblk                               collect blk file numbers with every edge - default: No
