@@ -70,7 +70,7 @@ def save_edge_list(parser, uploader=None, location=None, force_saving=False):
                                                    cvalue=cvalue)
         else:
             success = True
-             if parser.t0:
+            if parser.t0:
                 delta = int((datetime.now()-parser.t0).total_seconds()) 
 
             # Else, it must be the first blk file that is parsed
@@ -103,6 +103,9 @@ def save_edge_list(parser, uploader=None, location=None, force_saving=False):
 def used_ram():
     m = psutil.virtual_memory()
     return m.percent
+
+def handle_time_delta(parser):
+    pass
            
 def estimate_end(loopduration, curr_file, total_files):
     avg_loop = int(sum(loopduration[-15:])/len(loopduration[-15:]))
