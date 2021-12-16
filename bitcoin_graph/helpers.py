@@ -35,7 +35,7 @@ def get_date(folder="./output"):
     except:
         return 0   
 
-def save_edge_list(parser, uploader=None, location=None, force_saving=False):
+def save_edge_list(parser, uploader=None, location=None):
     rE           = parser.edge_list   # List with edges
     blkfilenr    = parser.fn          # File name
     cblk         = parser.cblk        # Bool if collecting blk file number
@@ -63,24 +63,11 @@ def save_edge_list(parser, uploader=None, location=None, force_saving=False):
             
     # Using Parquet format
     elif uploader:
-        if used_ram() > 5 or force_saving:
-            success = uploader.upload_parquet_data(rE=rE,
-                                                   blkfilenr=blkfilenr,
-                                                   cblk=cblk,
-                                                   cvalue=cvalue)
-        else:
-            success = True
-            if parser.t0:
-                delta = int((datetime.now()-parser.t0).total_seconds()) 
+        success = uploader.upload_parquet_data(rE=rE,
+                                               blkfilenr=blkfilenr,
+                                               cblk=cblk,
+                                               cvalue=cvalue)
 
-            # Else, it must be the first blk file that is parsed
-            else:
-                delta = int((datetime.now()-parser.creationTime).total_seconds())
-            parser.loop_duration.append(delta)
-            parser.loop_duration = parser.loop_duration[-15:]
-            _print(f"blk file nr. {blkfilenr} appended to the edge list", end="\r")
-            return success
-    
     # Store locally
     else:
         if not os.path.isdir('{}/output'.format(location)):
@@ -105,7 +92,16 @@ def used_ram():
     return m.percent
 
 def handle_time_delta(parser):
-    pass
+    # Add time delta to loop duration
+    if parser.t0:
+        delta = int((datetime.now()-parser.t0).total_seconds()) 
+
+    # Else, it must be the first blk file that is parsed
+    else:
+        delta = int((datetime.now()-parser.creationTime).total_seconds())
+    parser.loop_duration.append(delta)
+    parser.loop_duration = parser.loop_duration[-15:]
+    return delta, parser.loop_duration
            
 def estimate_end(loopduration, curr_file, total_files):
     avg_loop = int(sum(loopduration[-15:])/len(loopduration[-15:]))
@@ -170,8 +166,6 @@ def tablestats(parser):
     rE            = parser.edge_list     # List with edges
     blkfilenr     = parser.fn            # File nr.
     re_len        = len(rE)              # Nr. of edges
-    t0            = parser.t0            # Timestamp of previous blk file
-    loop_duration = parser.loop_duration # Array of size 15 with avg iteration duration
     total_files   = parser.l             # Total blk files
     
     parser.cum_edges += re_len           # Cumulated edges
@@ -185,18 +179,8 @@ def tablestats(parser):
     
     # Time stats
     timestamp = datetime.now().strftime('%H:%M:%S')
-
-    # Add time delta to loop duration
-    if t0:
-        delta = int((datetime.now()-t0).total_seconds()) 
-        
-    # Else, it must be the first blk file that is parsed
-    else:
-        delta = int((datetime.now()-parser.creationTime).total_seconds())  
-        
-    # Append loop duration and slice array
-    parser.loop_duration.append(delta)
-    parser.loop_duration = parser.loop_duration[-15:]
+    
+    delta, loop_duration = handle_time_delta(parser)
 
     # Get timestamps of first and last entry in edge list
     t_0 = datetime.fromtimestamp(int(rE[0][0])).strftime("%d.%m.%Y")
