@@ -29,7 +29,8 @@ class Uploader():
     # path: google big query path, default:output/<date>/rawedges
     # table id: google big query table id, default: btc
     # dataset: specific dataset within table, default: bitcoin_transaction
-    def __init__(self, credentials, project, dataset, table_id, path=None, logger=None, bucket=None, pthreshold=None):
+    def __init__(self, credentials, project, dataset, table_id, path=None, 
+                 logger=None, bucket=None, pthreshold=None, multi_p=False):
         
         # put google credentials into .gcpkey folder
         self.credentials = credentials
@@ -42,6 +43,7 @@ class Uploader():
         self.logger          = logger
         self.threshold       = pthreshold
         self.bucketname      = bucket
+        self.multi_p         = multi_p
         try:
             self.path  = path or "output/{}/rawedges".format(get_date())
         except:
@@ -64,7 +66,45 @@ class Uploader():
             cls.append("blk_file_nr")
         return cls
     
-    def upload_parquet_data(self, rE, blkfilenr, cblk,cvalue):
+    def end_not_yet_reached(self):
+        ''' Returns `True` if parsing has ended and no more files to upload '''
+        if len(os.listdir(".temp")) > 1:
+            return True
+        else:
+            with open("./.temp/end_multiprocessing.txt", "r") as file:
+                return not eval(file.read())
+    
+    def upload_parquet_data(self):
+        while(self.end_not_yet_reached()):
+            current_file_list = os.listdir(".temp")
+            if len(current_file_list) > 1:
+                for file in current_file_list:
+
+                    if file.endswith("txt"):
+                        continue
+
+                    file = ".temp/" + file
+                    filenr = re.search("([0-9]+)",file).group()
+                    bucket = self.storage_client.bucket(self.bucketname)
+                    blob = bucket.blob("blks_{}.parquet".format(filenr))
+                    blob.upload_from_filename(file, timeout=600)
+                    os.remove(file)    # Delete file
+                    job_config = bigquery.LoadJobConfig(source_format=bigquery.SourceFormat.PARQUET,)
+                    uri = "gs://{}/blks_{}.parquet".format(self.bucketname,filenr)
+
+                    load_job = self.client.load_table_from_uri(
+                        uri, "{}.{}.{}".format(self.project,self.dataset,self.table_id), job_config=job_config
+                    )  # Make an API request
+                    
+                    load_job.result()  # Waits for the job to complete
+                    _print(f"{file} uploaded", end="\r")
+                    self.logger.log("Uploaded blk file {}".format(file))
+
+            else:
+                time.sleep(5)
+        return True
+
+    def handle_parquet_data(self, rE, blkfilenr, cblk, cvalue):
         
         cls = self.get_columnnames(cvalue,cblk)
     
@@ -73,26 +113,27 @@ class Uploader():
 
         df.to_parquet(".temp/blks_{}.parquet".format(blkfilenr))
         self.logger.log("Saved .temp/blks_{}.parquet".format(blkfilenr))
-        
-        current_file_list = os.listdir(".temp")
-        
-        if len(current_file_list) > self.threshold:
-            for file in current_file_list:
-                file = ".temp/" + file
-                filenr = re.search("([0-9]+)",file).group()
-                bucket = self.storage_client.bucket(self.bucketname)
-                blob = bucket.blob("blks_{}.parquet".format(filenr))
-                blob.upload_from_filename(file, timeout=600)
-                job_config = bigquery.LoadJobConfig(source_format=bigquery.SourceFormat.PARQUET,)
-                uri = "gs://{}/blks_{}.parquet".format(self.bucketname,filenr)
+        if not self.multi_p:
+            current_file_list = os.listdir(".temp")
 
-                load_job = self.client.load_table_from_uri(
-                    uri, "{}.{}.{}".format(self.project,self.dataset,self.table_id), job_config=job_config
-                )  # Make an API request
-                _print(f"{file} uploaded", end="\r")
-                load_job.result()  # Waits for the job to complete
-                self.logger.log("Uploaded blk file {}".format(file))
-                os.remove(file)    # Delete files
+            if len(current_file_list) > self.threshold:
+                for file in current_file_list:
+                    file = ".temp/" + file
+                    filenr = re.search("([0-9]+)",file).group()
+                    bucket = self.storage_client.bucket(self.bucketname)
+                    blob = bucket.blob("blks_{}.parquet".format(filenr))
+                    blob.upload_from_filename(file, timeout=600)
+                    job_config = bigquery.LoadJobConfig(source_format=bigquery.SourceFormat.PARQUET,)
+                    uri = "gs://{}/blks_{}.parquet".format(self.bucketname,filenr)
+
+                    load_job = self.client.load_table_from_uri(
+                        uri, "{}.{}.{}".format(self.project,self.dataset,self.table_id), job_config=job_config
+                    )  # Make an API request
+                    
+                    load_job.result()  # Waits for the job to complete
+                    _print(f"{file} uploaded", end="  \r")
+                    self.logger.log("Uploaded blk file {}".format(file))
+                    os.remove(file)    # Delete files
         else:
             pass
         

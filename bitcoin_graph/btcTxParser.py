@@ -37,7 +37,7 @@ class BtcTxParser:
                  targetpath=None, endTS=None, iC=None, upload=False, 
                  credentials=None, dataset=None, table_id=None, project=None, 
                  cvalue=None, cblk=None, use_parquet=False, 
-                 upload_threshold=None, bucket=None
+                 upload_threshold=None, bucket=None, multi_p=False
                 ):
         self.creationTime = datetime.now()      # Creation time of `this`
         self.endTS        = endTS               # Timestamp of last block
@@ -48,6 +48,7 @@ class BtcTxParser:
         self.upload       = upload              # Bool to directly upload to GCP
         self.cvalue       = cvalue              # Bool to activate collecting values
         self.cblk         = cblk                # Bool to activate collection blk file numbers
+        self.multi_p      = multi_p             # Bool to activate multiprocessing
         if self.upload:
             self.creds       = credentials         # Path to google credentials json
             self.project     = project
@@ -62,12 +63,13 @@ class BtcTxParser:
                                         table_id   = self.table_id,
                                         logger     = self.logger,
                                         pthreshold = self.parq_thres,
-                                        bucket     = self.bucket
+                                        bucket     = self.bucket,
+                                        multi_p    = self.multi_p
                                        ) # BigQuery uploader
 
         # Timestamp to datetime object
         if self.endTS:
-            self.endTS=datetime.fromtimestamp(int(self.endTS))
+            self.endTS=datetime.fromtimestamp(int(self.endTS))     
         
         print("\nBtc Tx-Parser successfully initialized")
         time.sleep(1)
@@ -212,17 +214,17 @@ class BtcTxParser:
 
   
             # Finish execution 
+            _print("Parsing finished\n")
             self.finish_tasks()
-            _print("Execution finished")
             return self
         
         except KeyboardInterrupt:
-            self.logger.log("Keyboard interrupt...")
+            self.logger.log("Keyboard interrupt...\n")
             self.finish_tasks()
             return self
         
         except SystemExit:
-            self.logger.log("System exit...")
+            self.logger.log("System exit...\n")
             self.finish_tasks()
             return self 
     
@@ -231,6 +233,12 @@ class BtcTxParser:
         # Make sure everything is saved
         if len(self.edge_list) > 0:
             success = save_edge_list(self)
+        
+        # Create end file for multiprocessing
+        if self.multi_p:
+            with open("./.temp/end_multiprocessing.txt", "w") as file:
+                file.write("True")
+                
         execution_time = int((datetime.now() \
                               - self.creationTime).total_seconds()/60)
-        print(f"\nTook {execution_time} minutes since starting")
+        _print(f"Took {execution_time} minutes since starting\n")

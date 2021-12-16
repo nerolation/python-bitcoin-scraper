@@ -41,6 +41,7 @@ def save_edge_list(parser, uploader=None, location=None):
     cblk         = parser.cblk        # Bool if collecting blk file number
     cvalue       = parser.cvalue      # Bool if collecting values
     use_parquet  = parser.use_parquet # Bool if using parquet format
+    multi_p      = parser.multi_p
     
     if parser.upload:
         uploader = parser.uploader
@@ -63,10 +64,11 @@ def save_edge_list(parser, uploader=None, location=None):
             
     # Using Parquet format
     elif uploader:
-        success = uploader.upload_parquet_data(rE=rE,
+        success = uploader.handle_parquet_data(rE=rE,
                                                blkfilenr=blkfilenr,
                                                cblk=cblk,
-                                               cvalue=cvalue)
+                                               cvalue=cvalue
+                                              )
 
     # Store locally
     else:

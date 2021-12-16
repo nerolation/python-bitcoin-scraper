@@ -37,9 +37,15 @@ def starting_info(args):
     # Custom changes
     if args["parquet"]:
         print(colored("Parquet format is activated - Files will be converted to parquet "\
-                      "format before syncing to the Google cloud\n", "green",attrs=['bold']))
+                      "format before syncing to the Google cloud\n", "green", attrs=['bold']))
+            
     else:
         args["bucket"] = 0
+        if args["multiprocessing"]:
+            print(colored("Multiprocessing was deactivated - only supported with parquet format"
+                          , "red", attrs=['bold']))
+            args["multiprocessing"] = 0
+        
     print("{:<25}{:<13}".format("current wd:", __cwd__))
     non_bools = ["startfile","blklocation","format","targetpath","credentials",
                  "project","tableid","dataset","bucket","uploadthreshold"]
