@@ -27,7 +27,6 @@ parser.add_argument('-st', '--starttx', help="start transaction id (included) - 
 parser.add_argument('-et', '--endtx', help="end transaction id (excluded) - default: None", default=None)
 parser.add_argument('-ets', '--endts', help="end timestamp of block - default: None", default=None)
 parser.add_argument('-loc', '--blklocation', help=".blk|.csv file location - default: ~/.bitcoin/blocks", default="~/.bitcoin/blocks")
-parser.add_argument('-utxo', '--utxos', help="path to existing Utxos file - default: None", default=None)
 
 # Raw edge-list
 parser.add_argument('-path', '--targetpath', help="path to store raw edges locally - default: ./", default="./")
@@ -71,7 +70,6 @@ startTx      = _args.starttx
 endTx        = _args.endtx
 endTS        = _args.endts
 file_loc     = _args.blklocation
-utxos        = _args.utxos
 targetpath   = _args.targetpath
 collectvalue = _args.collectvalue
 cblk         = _args.collectblk
@@ -92,16 +90,17 @@ dataset      = _args.dataset
 # Initialize btc graph object
 # `blk_loc` for the location where the blk files are stored
 # `raw Edges` to additionally save graph in edgeList format
-btc_graph = BtcTxParser(dl=file_loc, Utxos=utxos, endTS=endTS,
-                        upload=upload, use_parquet=use_parquet, upload_threshold=up_thres, 
-                        bucket=bucket, cvalue =collectvalue, cblk=cblk, targetpath=targetpath,
-                        credentials=creds, table_id=table_id, dataset=dataset, project=project)
+btc_graph = BtcTxParser(dl=file_loc, endTS=endTS, upload=upload, use_parquet=use_parquet, 
+                        upload_threshold=up_thres, bucket=bucket, cvalue =collectvalue, cblk=cblk, 
+                        targetpath=targetpath, credentials=creds, table_id=table_id, dataset=dataset, 
+                        project=project)
 
 # Start building graph
-try:
-    btc_graph.parse(startFile,endFile,startTx,endTx)
-    
-# Crtl + C to skip upload
-except KeyboardInterrupt:
-    print("KEYBOARD WAS INTERRUPTED")
-print("-----------------------------------------")
+if __name__ == '__main__':
+    try:
+        btc_graph.parse(startFile,endFile,startTx,endTx)
+
+    # Crtl + C to end execution
+    except KeyboardInterrupt:
+        print("KEYBOARD WAS INTERRUPTED")
+    print("-----------------------------------------")
