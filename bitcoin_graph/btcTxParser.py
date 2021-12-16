@@ -149,8 +149,6 @@ class BtcTxParser:
                             continue
                     
                     for tx in block.transactions:
-                        if len(self.edge_list) > 10000:
-                            continue
                         
                         # Set `last-processed tx id`
                         self.currTxID = tx.txid
