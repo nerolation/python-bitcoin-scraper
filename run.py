@@ -12,12 +12,16 @@
 
 # Command line interface to either start parsing or upload already parsed edges to BigQuery
 
+import os
+import argparse
+import numpy as np
+from datetime import datetime
+from multiprocessing import Process
+
 from bitcoin_graph import starting_info
 from bitcoin_graph.btcTxParser import *
-from datetime import datetime
-import numpy as np
-import argparse
-import os
+from bitcoin_graph.uploader import Uploader
+from bitcoin_graph.logger import BlkLogger
 
 
 parser = argparse.ArgumentParser(formatter_class=lambda prog: argparse.HelpFormatter(prog,max_help_position=60))
@@ -45,6 +49,9 @@ parser.add_argument('-upload', '--upload', help="upload edges to google bigquery
 # Use Parquet format
 parser.add_argument('-parquet', '--parquet', help="use parquet format - default: False",  action='store_true')
 
+# Use Multiprocessing
+parser.add_argument('-mp', '--multiprocessing', help="use parquet format - default: False",  action='store_true')
+
 # Parquet file upload threshold
 parser.add_argument('-ut', '--uploadthreshold', help="uploading threshold for parquet files - default: 5",  default=5)
 
@@ -56,6 +63,7 @@ parser.add_argument('-c', '--credentials', help="path to google credentials (.*j
 parser.add_argument('-project', '--project', help="google cloud project name - default: btcgraph", default="btcgraph")
 parser.add_argument('-ds', '--dataset', help="bigquery data set name - default: btc", default="btc")
 parser.add_argument('-tid', '--tableid', help="bigquery table id - default: bitcoin_transactions", default="bitcoin_transactions")
+
 
 # Handle parameters
 _args = parser.parse_args()
@@ -81,6 +89,7 @@ creds        = _args.credentials
 project      = _args.project
 table_id     = _args.tableid
 dataset      = _args.dataset
+multi_p      = _args.multiprocessing
 # -----------------------------------------------
 
 
@@ -91,16 +100,32 @@ dataset      = _args.dataset
 # `blk_loc` for the location where the blk files are stored
 # `raw Edges` to additionally save graph in edgeList format
 btc_graph = BtcTxParser(dl=file_loc, endTS=endTS, upload=upload, use_parquet=use_parquet, 
-                        upload_threshold=up_thres, bucket=bucket, cvalue =collectvalue, cblk=cblk, 
+                        upload_threshold=up_thres, bucket=bucket, cvalue=collectvalue, cblk=cblk, 
                         targetpath=targetpath, credentials=creds, table_id=table_id, dataset=dataset, 
-                        project=project)
+                        project=project, multi_p=multi_p)
 
 # Start building graph
 if __name__ == '__main__':
     try:
-        btc_graph.parse(startFile,endFile,startTx,endTx)
+        if not multi_p:
 
+                btc_graph.parse(startFile,endFile,startTx,endTx)
+
+        else:
+            with open("./.temp/end_multiprocessing.txt", "w") as file:
+                file.write("False")
+                
+            uploader = Uploader(credentials=creds, table_id=table_id, dataset=dataset, 
+                                project=project, logger=BlkLogger(), bucket=bucket, 
+                                multi_p=multi_p)
+            
+            p1 = Process(target = btc_graph.parse, args=(startFile,endFile,startTx,endTx,))
+            p1.start()
+            p2 = Process(target = uploader.upload_parquet_data)
+            p2.start()
+            p1.join()
+            p2.join()
     # Crtl + C to end execution
     except KeyboardInterrupt:
-        print("KEYBOARD WAS INTERRUPTED")
+        print("\nKEYBOARD WAS INTERRUPTED")
     print("-----------------------------------------")
