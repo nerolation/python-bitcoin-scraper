@@ -178,13 +178,13 @@ class BtcTxParser:
                             for inp in tx.inputs:
 
                                 # Coinbase Txs
-                                if inp.transaction_id == "0" * 64:
+                                if inp.transaction_hash == "0" * 64:
                                     # Build egde from ZERO to all Transaction output addresses
                                     Vins.append("0")
                                
                                 # Append transaction id and vout 
                                 else:
-                                    Vins.append((inp.transaction_id, int(inp.transaction_index)))
+                                    Vins.append((inp.transaction_hash, int(inp.transaction_index)))
 
                             # Outputs and Values
                             Outs = []
