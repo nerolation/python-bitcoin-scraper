@@ -70,7 +70,7 @@ def save_edge_list(parser, uploader=None, location=None, force_saving=False):
                                                    cvalue=cvalue)
         else:
             success = True
-            print("skipped")
+            _print(f"blk file nr. {blkfilenr} appended to the edge list", end="\r")
             return success
     
     # Store locally
@@ -137,8 +137,8 @@ def print_output_header(parser):
                                                      "",
                                                      "",
                                                      "cum.",
-                                                     "\u0394 ",
-                                                     "avg. \u0394 ",
+                                                     " \u0394",
+                                                     "avg. \u0394",
                                                      "estimated",
                                                      "RAM stats")) 
     print("{:^13}|{:^9}| {:^21} | {:^12} | {:>5} |"\
@@ -147,7 +147,7 @@ def print_output_header(parser):
                                                      "date range",
                                                      "edges/blk",
                                                      "edges",
-                                                     "time",
+                                                     " time",
                                                      "time",
                                                      "end",
                                                      "(used)")) 
