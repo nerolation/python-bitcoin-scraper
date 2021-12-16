@@ -70,6 +70,14 @@ def save_edge_list(parser, uploader=None, location=None, force_saving=False):
                                                    cvalue=cvalue)
         else:
             success = True
+             if parser.t0:
+                delta = int((datetime.now()-parser.t0).total_seconds()) 
+
+            # Else, it must be the first blk file that is parsed
+            else:
+                delta = int((datetime.now()-parser.creationTime).total_seconds())
+            parser.loop_duration.append(delta)
+            parser.loop_duration = parser.loop_duration[-15:]
             _print(f"blk file nr. {blkfilenr} appended to the edge list", end="\r")
             return success
     
@@ -130,9 +138,9 @@ def get_table_schema(cls, cblk, cvalue):
 
 def print_output_header(parser):
     print("{:-^13}|{:-^9}|{:-^23}|{:-^14}|{:->7}|"\
-          "{:-^6}|{:-^10}|{:-^16}|{:-^21}|".format("","","","","","","","","")) 
+          "{:-^7}|{:-^10}|{:-^16}|{:-^21}|".format("","","","","","","","","")) 
     print("{:^13}|{:^9}| {:^21} | {:^12} | {:>5} |"\
-          "{:^5} | {:^8} | {:^14} | {:^19} |".format("",
+          "{:^6} | {:^8} | {:^14} | {:^19} |".format("",
                                                      "",
                                                      "",
                                                      "",
@@ -142,7 +150,7 @@ def print_output_header(parser):
                                                      "estimated",
                                                      "RAM stats")) 
     print("{:^13}|{:^9}| {:^21} | {:^12} | {:>5} |"\
-          "{:^5} | {:^8} | {:^14} | {:^19} |".format("timestamp",
+          "{:^6} | {:^8} | {:^14} | {:^19} |".format("timestamp",
                                                      "blk nr.",
                                                      "date range",
                                                      "edges/blk",
@@ -151,7 +159,7 @@ def print_output_header(parser):
                                                      "time",
                                                      "end",
                                                      "(used)")) 
-    print("{:-^13}|{:-^9}|{:-^23}|{:-^14}|{:->7}|{:-^6}"\
+    print("{:-^13}|{:-^9}|{:-^23}|{:-^14}|{:->7}|{:-^7}"\
           "|{:-^10}|{:-^16}|{:-^21}|".format("","","","","","","","","")) 
 
 # Ugly stats-printing function
