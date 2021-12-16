@@ -33,7 +33,7 @@ from bitcoin_graph.helpers import _print, save_edge_list, file_number, print_out
 
 class BtcTxParser:
 
-    def __init__(self, edge_list=None, dl='~/.bitcoin/blocks', Utxos=None, 
+    def __init__(self, edge_list=None, dl='~/.bitcoin/blocks', 
                  targetpath=None, endTS=None, iC=None, upload=False, 
                  credentials=None, dataset=None, table_id=None, project=None, 
                  cvalue=None, cblk=None, use_parquet=False, 
@@ -68,10 +68,6 @@ class BtcTxParser:
         # Timestamp to datetime object
         if self.endTS:
             self.endTS=datetime.fromtimestamp(int(self.endTS))
-        
-        # Load existing Utxos mapping if path was specified
-        if self.Utxos:
-            self.Utxos = load_Utxos(self.Utxos)
         
         print("\nBtc Tx-Parser successfully initialized")
         time.sleep(1)
@@ -238,8 +234,6 @@ class BtcTxParser:
         if self.use_parquet:
             if len(self.edge_list) > 0:
                 success = save_edge_list(self, force_saving=True)
-        if self.Utxos:
-            save_Utxos(self.Utxos)
         execution_time = int((datetime.now() \
                               - self.creationTime).total_seconds()/60)
         print(f"\nTook {execution_time} minutes since starting")
