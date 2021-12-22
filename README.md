@@ -41,6 +41,7 @@ optional arguments:
   -collectblk, --collectblk                               collect blk file numbers with every edge - default: No
   -upload, --upload                                       upload edges to google bigquery - default: False
   -parquet, --parquet                                     use parquet format - default: False
+  -mp, --multiprocessing                                  use multiprocessing - default: False
   -ut UPLOADTHRESHOLD, --uploadthreshold UPLOADTHRESHOLD  uploading threshold for parquet files - default: 5
   -bucket BUCKET, --bucket BUCKET                         bucket name to store parquet files - default: btc_<timestamp>
   -c CREDENTIALS, --credentials CREDENTIALS               path to google credentials (.*json)- default: ./.gcpkey/.*json
@@ -54,8 +55,9 @@ If uploading is activated, it is highly recommended to consider the integrated p
 
 
 ## Features
+- Multiprocessing
+- Parquet format integration (compressed files for faster uploads)
 - BigQuery integration 
-- Parquet integration (compressed files to safe bandwidth and speed up the upload)
 - Custom Start possibilities
 -   Start at specific transaction or blk file
 - Custom End
