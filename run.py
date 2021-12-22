@@ -50,7 +50,7 @@ parser.add_argument('-upload', '--upload', help="upload edges to google bigquery
 parser.add_argument('-parquet', '--parquet', help="use parquet format - default: False",  action='store_true')
 
 # Use Multiprocessing
-parser.add_argument('-mp', '--multiprocessing', help="use parquet format - default: False",  action='store_true')
+parser.add_argument('-mp', '--multiprocessing', help="use multiprocessing - default: False",  action='store_true')
 
 # Parquet file upload threshold
 parser.add_argument('-ut', '--uploadthreshold', help="uploading threshold for parquet files - default: 5",  default=5)
