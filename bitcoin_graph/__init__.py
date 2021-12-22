@@ -68,7 +68,7 @@ def starting_info(args):
         if not os.path.isdir('./.temp'):
             os.makedirs('./.temp')
         elif len(os.listdir('./.temp')) > 0:
-            if len(os.listdir('./.temp')) == 1 and "end_multiprocessing.txt" in os.listdir('./.temp')[0]:
+            if len(os.listdir('./.temp')) == 1 and "end_multiprocessing.txt" in os.listdir('./.temp'):
             	pass
             else:
                 delete = input("There are already files in the ./.temp folder\n"\
