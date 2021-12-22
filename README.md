@@ -1,9 +1,8 @@
 # bitcoin-graph 
 
-**in progress**
 
+**Bitcoin-Python-Graph** represents a **command line tool** to parse transactions directly from raw blk files using Python. 
 
-**Bitcoin-Python-Graph** represents a **command line tool** to parse transactions directly from raw blk files using Python.
 
 ---
 
@@ -26,7 +25,7 @@ By default the following columns are collected:
 ## Usage
 
 ```console
-$ python3 run.py -loc ./data --collectvalue --collectblk --upload --parquet
+$ python3 run.py -loc ./data --collectvalue --collectblk --upload --parquet --multiprocessing
 
 optional arguments:
   -h, --help                                              show this help message and exit
@@ -49,7 +48,7 @@ optional arguments:
   -ds DATASET, --dataset DATASET                          bigquery data set name - default: btc
   -tid TABLEID, --tableid TABLEID                         bigquery table id - default: bitcoin_transactions
 ```
-If uploading is activated, it is highly recommended to consider the integrated parquet-format conversion before uploading the data to the Google Cloud in order to reduce bandwidth usage. This can easily be done using the  `--parquet` flag.
+If uploading is activated, it is highly recommended to consider the integrated parquet-format conversion before uploading the data to the Google Cloud in order to reduce bandwidth usage. This can easily be done using the  `--parquet` flag. Using parquet format you can boost execution by activating multiprocessing - using the `-mp` flag - and parallely parse and upload block files.
 
 ---
 
@@ -64,41 +63,19 @@ If uploading is activated, it is highly recommended to consider the integrated p
 -   End execution at specefic transaction or blk file
 - Optionally parse values and blk-file numbers
 - Dummy address for coinbase transaction
+- Supports invalid and unknown scripts + OP_RETURNs
 - Integrated logging
 
 ## Installing
-- in work
-
-### Using pip
-- in work
 
 
 ### Using source
-
-Requirements : python-bitcoinlib, 
-```
-pip install -r requirements.txt
-```
 
 Install dependencies contained in `requirements.txt`:
 ```
 pip install -r requirements.txt
 ```
 
-Then, just run
-```
-python setup.py install
-```
-
-## Developing
-
-First, setup a virtualenv and install dependencies:
-
-```
-virtualenv -p python3 .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
 
 ## Examples
 
