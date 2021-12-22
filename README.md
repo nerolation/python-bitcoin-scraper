@@ -78,7 +78,7 @@ pip install -r requirements.txt
 
 
 ## Examples
-
+[![asciicast](https://asciinema.org/a/DVl9S8UkxmUbEOBq7I0peHyvG.svg)](https://asciinema.org/a/DVl9S8UkxmUbEOBq7I0peHyvG)
 ---
 
 **Note: Currently it takes about 4 days to parse and upload the complete blockchain!** 
