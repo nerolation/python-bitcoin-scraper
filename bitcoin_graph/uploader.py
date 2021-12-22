@@ -34,7 +34,8 @@ class Uploader():
         
         # put google credentials into .gcpkey folder
         self.credentials = credentials
-        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = self.credentials
+        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = self.credentials or input("No Google API credendials file provided."\
+        									   "Please specify path now:\n")
         self.client          = bigquery.Client()
         self.storage_client  = storage.Client()
         self.project         = project
