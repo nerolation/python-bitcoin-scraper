@@ -40,7 +40,8 @@ def starting_info(args):
                       "format before syncing to the Google cloud\n", "green", attrs=['bold']))
             
     else:
-        args["bucket"] = 0
+        args["bucket"] = None
+        args["uploadthreshold"] = None
         if args["multiprocessing"]:
             print(colored("Multiprocessing was deactivated - only supported with parquet format"
                           , "red", attrs=['bold']))
@@ -68,15 +69,12 @@ def starting_info(args):
         if not os.path.isdir('./.temp'):
             os.makedirs('./.temp')
         elif len(os.listdir('./.temp')) > 0:
-            if len(os.listdir('./.temp')) == 1 and "end_multiprocessing.txt" in os.listdir('./.temp'):
-            	pass
-            else:
-                delete = input("There are already files in the ./.temp folder\n"\
-                               "Do you want to delet them? (y/n)\n")
-                if delete == "y":
-                    for tempfile in os.listdir('./.temp'):
-                        os.remove('./.temp/'+tempfile) 
-                print("\r\r           ")
+            delete = input("There are already files in the ./.temp folder\n"\
+                           "Do you want to delet them? (y/n)\n")
+            if delete == "y":
+                for tempfile in os.listdir('./.temp'):
+                    os.remove('./.temp/'+tempfile) 
+            print("\r\r           ")
     for i in range(2):
         for i in ["|", "/", "-", "\\"]:
             sys.stdout.write("\rInitializing... "+i)
