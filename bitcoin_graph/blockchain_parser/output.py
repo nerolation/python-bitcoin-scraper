@@ -75,6 +75,8 @@ class Output(object):
                 n = self.script.operations[-2]
                 for operation in self.script.operations[1:1+n]:
                     self._addresses.append(Address.from_public_key(operation))
+                    # Break to only take one of the multisig addresses
+                    break
             elif self.type == "p2wpkh":
                 address = Address.from_bech32(self.script.operations[1], 0)
                 self._addresses.append(address)
