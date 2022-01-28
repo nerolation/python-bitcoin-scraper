@@ -49,12 +49,12 @@ class BtcTxParser:
         self.cvalue       = cvalue              # Bool to activate collecting values
         self.cblk         = cblk                # Bool to activate collection blk file numbers
         self.multi_p      = multi_p             # Bool to activate multiprocessing
+        self.use_parquet = use_parquet         # Use parquet format
         if self.upload:
             self.creds       = credentials         # Path to google credentials json
             self.project     = project
             self.table_id    = table_id            # GBQ table id
             self.dataset     = dataset             # GBQ data set name
-            self.use_parquet = use_parquet         # Use parquet format
             self.parq_thres  = upload_threshold    # Threshold when parquet files will be uploaded 
             self.bucket      = bucket              # Bucket name to store parquet files
             self.uploader    = Uploader(credentials=self.creds,
@@ -198,16 +198,17 @@ class BtcTxParser:
                             # Build edge
                             self._buildEdge(Vins, Outs, Vals)
                 
-                if not self.use_parquet:
-                    _print(f"blk file nr. {self.fn} successfully parsed...", end='\r')
-                # Safe/upload and reset edge list and then reset it
-                success = save_edge_list(self)
+                if start:
+                    if not self.use_parquet:
+                        _print(f"blk file nr. {self.fn} successfully parsed...", end='\r')
+                    # Safe/upload and reset edge list and then reset it
+                    success = save_edge_list(self)
 
-                # If something failed, user can manually stop
-                if success == "stop":
-                    self.finish_tasks()
-                    _print("Execution finished")
-                    return self   
+                    # If something failed, user can manually stop
+                    if success == "stop":
+                        self.finish_tasks()
+                        _print("Execution finished")
+                        return self   
                 
                 # Reset t0 for next block
                 self.t0 = datetime.now()                  
