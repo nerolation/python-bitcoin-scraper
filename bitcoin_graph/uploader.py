@@ -50,12 +50,13 @@ class Uploader():
         except:
             pass
         
-        existing_buckets = []
-        for _bucket in self.storage_client.list_buckets():
-            existing_buckets.append(_bucket.name)
-        if self.bucketname not in existing_buckets:
-            bucket = self.storage_client.create_bucket(self.bucketname,location="EUROPE-WEST3")
-            print("Bucket created")
+        if bucket:
+            existing_buckets = []
+            for _bucket in self.storage_client.list_buckets():
+                existing_buckets.append(_bucket.name)
+            if self.bucketname not in existing_buckets:
+                bucket = self.storage_client.create_bucket(self.bucketname,location="EUROPE-WEST3")
+                print("Bucket created")
         
     def get_columnnames(self, cvalue, cblk):
         
