@@ -62,9 +62,7 @@ class BlockHeader(object):
     def timestamp(self):
         """Returns the timestamp of the block as a UTC datetime object"""
         if self._timestamp is None:
-            self._timestamp = datetime.utcfromtimestamp(
-                decode_uint32(self.hex[68:72])
-            )
+            self._timestamp =  decode_uint32(self.hex[68:72])
         return self._timestamp
 
     @property
