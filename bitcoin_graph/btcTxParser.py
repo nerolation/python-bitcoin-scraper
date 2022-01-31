@@ -144,8 +144,8 @@ class BtcTxParser:
                     self.currBlHash = block.hash
 
                     # Skip blocks younger than specified `end timestamp`
-                    self.currBl   = block.header.timestamp
-                    self.currBl_s = int(self.currBl.timestamp())
+                    self.currBl_s = block.header.timestamp
+                    self.currBl = datetime.utcfromtimestamp(self.currBl_s)
                     if self.endTS:                     
                         if self.currBl > self.endTS:
                             continue
