@@ -8,6 +8,9 @@
 # No part of bitcoin-blockchain-parser, including this file, may be copied,
 # modified, propagated, or distributed except according to the terms contained
 # in the LICENSE file.
+#
+# Alterations to this file:
+# datetime.utcfromtimestamp function removed
 
 from datetime import datetime
 from bitcoin.core import CBlockHeader
