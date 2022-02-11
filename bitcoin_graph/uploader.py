@@ -105,8 +105,7 @@ class Uploader():
 
                             load_job.result()  # Waits for the job to complete
                             worked = True
-                            
-                         except BadRequest:
+                        except BadRequest:
                             time.sleep(10)
                             
                     os.remove(file)    # Delete file
