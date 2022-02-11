@@ -13,6 +13,7 @@
 
 from datetime import datetime
 from google.cloud import bigquery, storage
+from google.api_core.exceptions import BadRequest
 import re
 import os
 import sys
@@ -81,11 +82,12 @@ class Uploader():
             current_file_list = os.listdir(".temp")
             if len(current_file_list) > 1:
                 for file in current_file_list:
-
+                    file = ".temp/" + file
                     if file.endswith("txt"):
                         continue
-
-                    file = ".temp/" + file
+                    if datetime.now().timestamp()-os.path.getmtime(file) < 20:
+                        continue
+                    
                     filenr = re.search("([0-9]+)",file).group()
                     bucket = self.storage_client.bucket(self.bucketname)
                     blob = bucket.blob("blk_{}.parquet".format(filenr))
@@ -93,12 +95,17 @@ class Uploader():
                     
                     job_config = bigquery.LoadJobConfig(source_format=bigquery.SourceFormat.PARQUET,)
                     uri = "gs://{}/blk_{}.parquet".format(self.bucketname,filenr)
+                    worked = False
+                    while not worked:
+                        try:
+                            load_job = self.client.load_table_from_uri(
+                                uri, "{}.{}.{}".format(self.project,self.dataset,self.table_id), job_config=job_config
+                            )  # Make an API request
 
-                    load_job = self.client.load_table_from_uri(
-                        uri, "{}.{}.{}".format(self.project,self.dataset,self.table_id), job_config=job_config
-                    )  # Make an API request
-                    
-                    load_job.result()  # Waits for the job to complete
+                            load_job.result()  # Waits for the job to complete
+                            worked = True
+                         except BadRequest:
+                            
                     os.remove(file)    # Delete file
                     blob.delete()
                     _print(f"{file} uploaded", end="\r")
