@@ -90,7 +90,7 @@ class Uploader():
                     bucket = self.storage_client.bucket(self.bucketname)
                     blob = bucket.blob("blk_{}.parquet".format(filenr))
                     blob.upload_from_filename(file, timeout=600)
-                    os.remove(file)    # Delete file
+                    
                     job_config = bigquery.LoadJobConfig(source_format=bigquery.SourceFormat.PARQUET,)
                     uri = "gs://{}/blk_{}.parquet".format(self.bucketname,filenr)
 
@@ -99,6 +99,7 @@ class Uploader():
                     )  # Make an API request
                     
                     load_job.result()  # Waits for the job to complete
+                    os.remove(file)    # Delete file
                     blob.delete()
                     _print(f"{file} uploaded", end="\r")
                     self.logger.log("Uploaded blk file {}".format(file))
