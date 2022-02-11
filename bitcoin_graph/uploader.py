@@ -88,17 +88,18 @@ class Uploader():
                     file = ".temp/" + file
                     filenr = re.search("([0-9]+)",file).group()
                     bucket = self.storage_client.bucket(self.bucketname)
-                    blob = bucket.blob("blks_{}.parquet".format(filenr))
+                    blob = bucket.blob("blk_{}.parquet".format(filenr))
                     blob.upload_from_filename(file, timeout=600)
                     os.remove(file)    # Delete file
                     job_config = bigquery.LoadJobConfig(source_format=bigquery.SourceFormat.PARQUET,)
-                    uri = "gs://{}/blks_{}.parquet".format(self.bucketname,filenr)
+                    uri = "gs://{}/blk_{}.parquet".format(self.bucketname,filenr)
 
                     load_job = self.client.load_table_from_uri(
                         uri, "{}.{}.{}".format(self.project,self.dataset,self.table_id), job_config=job_config
                     )  # Make an API request
                     
                     load_job.result()  # Waits for the job to complete
+                    blob.delete()
                     _print(f"{file} uploaded", end="\r")
                     self.logger.log("Uploaded blk file {}".format(file))
 
@@ -112,9 +113,11 @@ class Uploader():
     
         df = pd.DataFrame(rE, columns=cls)
         df["vout"] = df["vout"].astype('int') 
+        for col in df.select_dtypes(include="object").columns:
+            df[col] = df[col].apply(lambda x:re.sub('[^A-Za-z0-9]+','', str(x)))
 
-        df.to_parquet(".temp/blks_{}.parquet".format(blkfilenr))
-        self.logger.log("Saved .temp/blks_{}.parquet".format(blkfilenr))
+        df.to_parquet(".temp/blk_{}.parquet".format(blkfilenr))
+        self.logger.log("Saved .temp/blk_{}.parquet".format(blkfilenr))
         if not self.multi_p:
             current_file_list = os.listdir(".temp")
 
@@ -123,10 +126,10 @@ class Uploader():
                     file = ".temp/" + file
                     filenr = re.search("([0-9]+)",file).group()
                     bucket = self.storage_client.bucket(self.bucketname)
-                    blob = bucket.blob("blks_{}.parquet".format(filenr))
+                    blob = bucket.blob("blk_{}.parquet".format(filenr))
                     blob.upload_from_filename(file, timeout=600)
                     job_config = bigquery.LoadJobConfig(source_format=bigquery.SourceFormat.PARQUET,)
-                    uri = "gs://{}/blks_{}.parquet".format(self.bucketname,filenr)
+                    uri = "gs://{}/blk_{}.parquet".format(self.bucketname,filenr)
 
                     load_job = self.client.load_table_from_uri(
                         uri, "{}.{}.{}".format(self.project,self.dataset,self.table_id), job_config=job_config
