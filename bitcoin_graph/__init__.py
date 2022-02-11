@@ -43,6 +43,11 @@ def starting_info(args):
         args["tableid"] = colored("deactivated", "red")
         args["dataset"] = colored("deactivated", "red")
         args["upload"] = 0
+        if args["parquet"]:
+            print(colored("Use parquet mode only together with the --upload flag"
+                          , "red", attrs=['bold']))
+            raise Exception("Set --upload flag")
+            
         if args["multiprocessing"] or args["parquet"]:
             print(colored("Make sure to set the upload flag when using parquet mode\n", "red", attrs=['bold']))
             time.sleep(1)
@@ -66,7 +71,7 @@ def starting_info(args):
             
         
     print("{:<25}{:<13}".format("current wd:", __cwd__))
-    non_bools = ["startfile","blklocation","format","targetpath","credentials",
+    non_bools = ["startfile","endfile","blklocation","format","targetpath","credentials",
                  "project","tableid","dataset","bucket","uploadthreshold"]
     
     # Manage bool arguments
@@ -87,11 +92,8 @@ def starting_info(args):
         if not os.path.isdir('./.temp'):
             os.makedirs('./.temp')
         elif len(os.listdir('./.temp')) > 0:
-            delete = input("There are already files in the ./.temp folder\n"\
-                           "Do you want to delet them? (y/n)\n")
-            if delete == "y":
-                for tempfile in os.listdir('./.temp'):
-                    os.remove('./.temp/'+tempfile) 
+            for tempfile in os.listdir('./.temp'):
+                os.remove('./.temp/'+tempfile) 
             print("\r\r           ")
     for i in range(2):
         for i in ["|", "/", "-", "\\"]:
