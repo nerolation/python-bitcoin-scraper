@@ -114,12 +114,14 @@ if __name__ == '__main__':
 
         else:
             cpus = cpu_count()
+            print(cpus)
             sF = file_number(startFile)
             print(sF)
             eF = file_number(endFile)
             print(eF)
             d  = round((eF - sF)/cpus-1)
-            r = list((sF, eF+1))
+            print(d)
+            r = list(range(sF, eF+1))
             
             
        
@@ -134,9 +136,12 @@ if __name__ == '__main__':
                 pack[i] = r[d*i:d*(1+i)]
             print(pack)
             for i in list(pack):
-                start = "blk{}.dat".format(list(str(pack[i].values()).zfill(5))[0])
-                end   = "blk{}.dat".format(list(str(pack[i].values()).zfill(5))[-1])
+                start = "blk{}.dat".format(str(list(pack[i])[0]).zfill(5))
+                print(start)
+                end   = "blk{}.dat".format(str(list(pack[i])[-1]).zfill(5))
                 p1 = Process(target = btc_graph.parse, args=(start,end,startTx,endTx))
+                print(end)
+                
                 p1.start()
                 
             p2 = Process(target = uploader.upload_parquet_data)
