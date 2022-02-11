@@ -52,7 +52,7 @@ def starting_info(args):
             args["multiprocessing"] = 0
         
     print("{:<25}{:<13}".format("current wd:", __cwd__))
-    non_bools = ["startfile","blklocation","format","targetpath","credentials",
+    non_bools = ["startfile","endfile","blklocation","format","targetpath","credentials",
                  "project","tableid","dataset","bucket","uploadthreshold"]
     
     # Manage bool arguments
