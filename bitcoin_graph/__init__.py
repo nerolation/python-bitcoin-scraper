@@ -74,7 +74,7 @@ def starting_info(args):
             os.makedirs('./.temp')
         elif len(os.listdir('./.temp')) > 0:
             delete = input("There are already files in the ./.temp folder\n"\
-                           "Do you want to delet them? (y/n)\n")
+                           "Do you want to delete them? (y/n)\n")
             if delete == "y":
                 for tempfile in os.listdir('./.temp'):
                     os.remove('./.temp/'+tempfile) 
