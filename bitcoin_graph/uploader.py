@@ -96,17 +96,17 @@ class Uploader():
                     job_config = bigquery.LoadJobConfig(source_format=bigquery.SourceFormat.PARQUET,)
                     uri = "gs://{}/blk_{}.parquet".format(self.bucketname,filenr)
                     
-                    worked = False
-                    while not worked:
-                        try:
-                            load_job = self.client.load_table_from_uri(
-                                uri, "{}.{}.{}".format(self.project,self.dataset,self.table_id), job_config=job_config
-                            )  # Make an API request
 
-                            load_job.result()  # Waits for the job to complete
-                            worked = True
-                        except BadRequest:
-                            time.sleep(10)
+                    try:
+                        load_job = self.client.load_table_from_uri(
+                            uri, "{}.{}.{}".format(self.project,self.dataset,self.table_id), job_config=job_config
+                        )  # Make an API request
+
+                        load_job.result()  # Waits for the job to complete
+
+                    except BadRequest:
+                        time.sleep(10)
+                        continue
                             
                     os.remove(file)    # Delete file
                     blob.delete()
