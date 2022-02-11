@@ -16,7 +16,7 @@ import os
 import argparse
 import numpy as np
 from datetime import datetime
-from multiprocessing import Process, cpu_count
+from multiprocessing import Process, cpu_count, connection
 
 from bitcoin_graph import starting_info
 from bitcoin_graph.btcTxParser import *
@@ -123,7 +123,7 @@ if __name__ == '__main__':
             print(d)
             r = list(range(sF, eF+1))
             
-            
+            processes = []
        
             with open("./.temp/end_multiprocessing.txt", "w") as file:
                 file.write("False")
@@ -139,15 +139,15 @@ if __name__ == '__main__':
                 start = "blk{}.dat".format(str(list(pack[i])[0]).zfill(5))
                 print(start)
                 end   = "blk{}.dat".format(str(list(pack[i])[-1]).zfill(5))
-                p1 = Process(target = btc_graph.parse, args=(start,end,startTx,endTx))
+                processes.append(Process(target = btc_graph.parse, args=(start,end,startTx,endTx)))
                 print(end)
                 
-                p1.start()
+            processes.append(Process(target = uploader.upload_parquet_data))
+            
+            for p in processes:
+                p.start()
                 
-            p2 = Process(target = uploader.upload_parquet_data)
-            p2.start()
-            p1.join()
-            p2.join()
+            connection.wait(p.sentinel for p in processes)
     # Crtl + C to end execution
     except KeyboardInterrupt:
         print("\nKEYBOARD WAS INTERRUPTED")
