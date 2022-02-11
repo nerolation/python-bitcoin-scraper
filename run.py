@@ -16,17 +16,18 @@ import os
 import argparse
 import numpy as np
 from datetime import datetime
-from multiprocessing import Process
+from multiprocessing import Process, cpu_count
 
 from bitcoin_graph import starting_info
 from bitcoin_graph.btcTxParser import *
 from bitcoin_graph.uploader import Uploader
 from bitcoin_graph.logger import BlkLogger
+from bitcoin_graph.helpers import file_number
 
 
 parser = argparse.ArgumentParser(formatter_class=lambda prog: argparse.HelpFormatter(prog,max_help_position=60))
 parser.add_argument('-sf', '--startfile', help=".blk start file (included) - default: blk00000.dat", default="blk00000.dat")
-parser.add_argument('-ef', '--endfile', help=".blk end file (excluded) - default: None", default=None)
+parser.add_argument('-ef', '--endfile', help=".blk end file (included) - default: None", default=None)
 parser.add_argument('-st', '--starttx', help="start transaction id (included) - default: None", default=None)
 parser.add_argument('-et', '--endtx', help="end transaction id (excluded) - default: None", default=None)
 parser.add_argument('-ets', '--endts', help="end timestamp of block - default: None", default=None)
@@ -112,15 +113,32 @@ if __name__ == '__main__':
                 btc_graph.parse(startFile,endFile,startTx,endTx)
 
         else:
+            cpus = cpu_count()
+            sF = file_number(startFile)
+            print(sF)
+            eF = file_number(endFile)
+            print(eF)
+            d  = round((eF - sF)/cpus-1)
+            r = list((sF, eF+1))
+            
+            
+       
             with open("./.temp/end_multiprocessing.txt", "w") as file:
                 file.write("False")
                 
             uploader = Uploader(credentials=creds, table_id=table_id, dataset=dataset, 
                                 project=project, logger=BlkLogger(), bucket=bucket, 
                                 multi_p=multi_p)
-            
-            p1 = Process(target = btc_graph.parse, args=(startFile,endFile,startTx,endTx,))
-            p1.start()
+            pack = {}
+            for i in range(cpus)[:-1]:
+                pack[i] = r[d*i:d*(1+i)]
+            print(pack)
+            for i in list(pack):
+                start = "blk{}.dat".format(list(str(pack[i].values()).zfill(5))[0])
+                end   = "blk{}.dat".format(list(str(pack[i].values()).zfill(5))[-1])
+                p1 = Process(target = btc_graph.parse, args=(start,end,startTx,endTx))
+                p1.start()
+                
             p2 = Process(target = uploader.upload_parquet_data)
             p2.start()
             p1.join()
