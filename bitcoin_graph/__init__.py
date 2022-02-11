@@ -25,16 +25,29 @@ def starting_info(args):
                   "with the following arguments:\n", attrs=['bold']))
     if str(args["collectvalue"]) in ["False", "None", "0"]:
         args["collectvalue"] = 0
+    
+    if not args["startfile"] or not args["endfile"]:
+        files = []
+        for file in os.listdir(args["blklocation"]):
+            if file.endswith(".dat"):
+                files.append(file)
+        if not args["startfile"]:
+            args["startfile"] = files[0]
+        if not args["endfile"]:
+            args["endfile"]   = files[-1]
+    
+    
     if str(args["upload"]) in ["False", "None", "0"]:
         args["credentials"] = colored("deactivated", "red")
         args["project"] = colored("deactivated", "red")
         args["tableid"] = colored("deactivated", "red")
         args["dataset"] = colored("deactivated", "red")
         args["upload"] = 0
-        if args["parquet"]:
-            print(colored("Use parquet mode only together with the --upload flag"
-                          , "red", attrs=['bold']))
-            raise Exception("Set --upload flag")
+        if args["multiprocessing"] or args["parquet"]:
+            print(colored("Make sure to set the upload flag when using parquet mode\n", "red", attrs=['bold']))
+            time.sleep(1)
+            raise Exception("Try to set --upload flag")
+
     else:
         args["targetpath"] = colored("deactivated", "red")
         
@@ -50,9 +63,10 @@ def starting_info(args):
             print(colored("Multiprocessing was deactivated - only supported with parquet format"
                           , "red", attrs=['bold']))
             args["multiprocessing"] = 0
+            
         
     print("{:<25}{:<13}".format("current wd:", __cwd__))
-    non_bools = ["startfile","endfile","blklocation","format","targetpath","credentials",
+    non_bools = ["startfile","blklocation","format","targetpath","credentials",
                  "project","tableid","dataset","bucket","uploadthreshold"]
     
     # Manage bool arguments
@@ -73,8 +87,11 @@ def starting_info(args):
         if not os.path.isdir('./.temp'):
             os.makedirs('./.temp')
         elif len(os.listdir('./.temp')) > 0:
-            for tempfile in os.listdir('./.temp'):
-                os.remove('./.temp/'+tempfile) 
+            delete = input("There are already files in the ./.temp folder\n"\
+                           "Do you want to delet them? (y/n)\n")
+            if delete == "y":
+                for tempfile in os.listdir('./.temp'):
+                    os.remove('./.temp/'+tempfile) 
             print("\r\r           ")
     for i in range(2):
         for i in ["|", "/", "-", "\\"]:
