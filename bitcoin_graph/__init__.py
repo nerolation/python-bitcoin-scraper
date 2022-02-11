@@ -31,6 +31,10 @@ def starting_info(args):
         args["tableid"] = colored("deactivated", "red")
         args["dataset"] = colored("deactivated", "red")
         args["upload"] = 0
+        if args["parquet"]:
+            print(colored("Use parquet mode only together with the --upload flag"
+                          , "red", attrs=['bold']))
+            raise Exception("Set --upload flag")
     else:
         args["targetpath"] = colored("deactivated", "red")
         
