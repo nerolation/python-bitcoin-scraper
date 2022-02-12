@@ -138,7 +138,7 @@ if __name__ == '__main__':
                     pack[i] = r[d*i:]
                 else:
                     pack[i] = r[d*i:d*(1+i)]
-            print(pack)
+           
             for i in list(pack):
                 if len(pack[i]) < 1:
                     continue
@@ -148,7 +148,7 @@ if __name__ == '__main__':
                 
             
             
-            for p in processes[::-1]:
+            for p in processes:
                 p.start()
                 print("Starting process at PID {:>5}".format(p.pid))
                 
