@@ -31,6 +31,7 @@ def starting_info(args):
         for file in os.listdir(args["blklocation"]):
             if file.endswith(".dat") and file.startswith("blk"):
                 files.append(file)
+        sorted(files)
         if not args["startfile"]:
             args["startfile"] = files[0]
         if not args["endfile"]:

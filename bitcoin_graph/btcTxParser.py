@@ -71,8 +71,7 @@ class BtcTxParser:
         if self.endTS:
             self.endTS=datetime.fromtimestamp(int(self.endTS))     
         
-        print("\nBtc Tx-Parser successfully initialized")
-        time.sleep(1)
+        print("Btc Tx-Parser successfully initialized")
     
     
     def _buildEdge(self, u, v, values):
@@ -101,11 +100,14 @@ class BtcTxParser:
         return None
 
     # Build Graph
-    def parse(self, sF, eF, sT, eT): 
+    def parse(self, sF, eF, sT, eT, process = 1): 
         '''Parising function that starts the parsing process.
            Arguments: start file `sF`, end file `eF`, start tx `sT` and a end tx `eT`.
         '''
-        print("Start parsing...")
+        if process == 1:
+            print("Start parsing...")
+            print_output_header(self)
+        
         try:
             # Instantiate the Blockchain by giving the path to the directory
             # containing the .blk files created by bitcoind
@@ -123,7 +125,7 @@ class BtcTxParser:
             # Value received by output
             self.l = len(blk_files)+file_number(sF)-1 if sF else len(blk_files)-1
             self.t0, self.loop_duration, self.Val, self.cum_edges = None, [], None, 0
-            print_output_header(self)
+            
             
             # Loop through all .blk files
             for blk_file in blk_files:
@@ -237,7 +239,7 @@ class BtcTxParser:
         
         # Create end file for multiprocessing
         if self.multi_p:
-            with open("./.temp/end_multiprocessing.txt", "w") as file:
+            with open(f"./.temp/end_multiprocessing_{np.random.randint(0,100000000)}.txt", "w") as file:
                 file.write("True")
                 
         execution_time = int((datetime.now() \

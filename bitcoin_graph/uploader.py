@@ -31,7 +31,7 @@ class Uploader():
     # table id: google big query table id, default: btc
     # dataset: specific dataset within table, default: bitcoin_transaction
     def __init__(self, credentials, project, dataset, table_id, path=None, 
-                 logger=None, bucket=None, pthreshold=None, multi_p=False):
+                 logger=None, bucket=None, pthreshold=None, multi_p=False, cores=1):
         
         # put google credentials into .gcpkey folder
         self.credentials = credentials
@@ -46,6 +46,7 @@ class Uploader():
         self.threshold       = pthreshold
         self.bucketname      = bucket
         self.multi_p         = multi_p
+        self.cores           = cores
         try:
             self.path  = path or "output/{}/rawedges".format(get_date())
         except:
@@ -57,7 +58,9 @@ class Uploader():
                 existing_buckets.append(_bucket.name)
             if self.bucketname not in existing_buckets:
                 bucket = self.storage_client.create_bucket(self.bucketname,location="EUROPE-WEST3")
-                print("Bucket created")
+                print(f"Bucket '{self.bucketname}'created")
+        print("Uploader successfully initialized")
+
         
     def get_columnnames(self, cvalue, cblk):
         
@@ -74,8 +77,17 @@ class Uploader():
         if len(os.listdir(".temp")) > 1:
             return True
         else:
-            with open("./.temp/end_multiprocessing.txt", "r") as file:
-                return not eval(file.read())
+            end = []
+            for file in os.listdir("./.temp/"):
+                if "end_multiprocessing" in file and file.endswith(".txt"):
+                    with open("./.temp/end_multiprocessing.txt", "r") as file:
+                        _end = eval(file.read())
+                        if _end:
+                            end.append(_end)
+            if len(end) >= self.cores:
+                return False
+            else:
+                return True
     
     def upload_parquet_data(self):
         while(self.end_not_yet_reached()):
