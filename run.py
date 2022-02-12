@@ -114,41 +114,45 @@ if __name__ == '__main__':
 
         else:
             cpus = cpu_count()
-            print(cpus)
+            cpu_u = 1
+            cpu_p = cpus - cpu_u
             sF = file_number(startFile)
-            print(sF)
             eF = file_number(endFile)
-            print(eF)
-            d  = round((eF - sF)/cpus-1)
-            print(d)
+            d  = round((eF - sF)/cpu_p)
             r = list(range(sF, eF+1))
             
             processes = []
        
-            with open("./.temp/end_multiprocessing.txt", "w") as file:
-                file.write("False")
+            
                 
             uploader = Uploader(credentials=creds, table_id=table_id, dataset=dataset, 
                                 project=project, logger=BlkLogger(), bucket=bucket, 
-                                multi_p=multi_p)
+                                multi_p=multi_p, cores=cpu_p)
             pack = {}
-            for i in range(cpus)[:-1]:
-                pack[i] = r[d*i:d*(1+i)]
+            for i in range(cpu_p):
+                if i+1 == cpu_p:
+                    pack[i] = r[d*i:]
+                else:
+                    pack[i] = r[d*i:d*(1+i)]
             print(pack)
             for i in list(pack):
+                if len(pack[i]) < 1:
+                    continue
                 start = "blk{}.dat".format(str(list(pack[i])[0]).zfill(5))
-                print(start)
                 end   = "blk{}.dat".format(str(list(pack[i])[-1]).zfill(5))
-                processes.append(Process(target = btc_graph.parse, args=(start,end,startTx,endTx)))
-                print(end)
+                processes.append(Process(target = btc_graph.parse, args=(start,end,startTx,endTx, i)))
                 
             processes.append(Process(target = uploader.upload_parquet_data))
             
             for p in processes:
                 p.start()
+                print("Starting process at PID {:>5}".format(p.pid))
                 
             connection.wait(p.sentinel for p in processes)
     # Crtl + C to end execution
     except KeyboardInterrupt:
+        if len(processes) > 0:
+            for p in processes:
+                p.terminate()
         print("\nKEYBOARD WAS INTERRUPTED")
-    print("-----------------------------------------")
+        print("-----------------------------------------")
