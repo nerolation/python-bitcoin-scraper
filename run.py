@@ -113,21 +113,25 @@ if __name__ == '__main__':
                 btc_graph.parse(startFile,endFile,startTx,endTx)
 
         else:
-            cpus = cpu_count()
-            cpu_u = 1
-            cpu_p = cpus - cpu_u
+            cpus = 4 #cpu_count()
             sF = file_number(startFile)
             eF = file_number(endFile)
-            d  = round((eF - sF)/cpu_p)
             r = list(range(sF, eF+1))
             
             processes = []
-       
             
+            if upload:  
+                cpu_u = 1
+                cpu_p = cpus - cpu_u
+                uploader = Uploader(credentials=creds, table_id=table_id, dataset=dataset, 
+                                    project=project, logger=BlkLogger(), bucket=bucket, 
+                                    multi_p=multi_p, cores=cpu_p)
+                processes.append(Process(target = uploader.upload_parquet_data))
                 
-            uploader = Uploader(credentials=creds, table_id=table_id, dataset=dataset, 
-                                project=project, logger=BlkLogger(), bucket=bucket, 
-                                multi_p=multi_p, cores=cpu_p)
+            else:
+                cpu_p = cpus
+            
+            d  = round((eF - sF)/cpu_p)
             pack = {}
             for i in range(cpu_p):
                 if i+1 == cpu_p:
@@ -142,17 +146,18 @@ if __name__ == '__main__':
                 end   = "blk{}.dat".format(str(list(pack[i])[-1]).zfill(5))
                 processes.append(Process(target = btc_graph.parse, args=(start,end,startTx,endTx, i)))
                 
-            processes.append(Process(target = uploader.upload_parquet_data))
             
-            for p in processes:
+            
+            for p in processes[::-1]:
                 p.start()
                 print("Starting process at PID {:>5}".format(p.pid))
                 
             connection.wait(p.sentinel for p in processes)
     # Crtl + C to end execution
     except KeyboardInterrupt:
-        if len(processes) > 0:
-            for p in processes:
-                p.terminate()
+        if multi_p:
+            if len(processes) > 0:
+                for p in processes:
+                    p.terminate()
         print("\nKEYBOARD WAS INTERRUPTED")
         print("-----------------------------------------")
