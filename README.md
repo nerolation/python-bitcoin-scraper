@@ -32,7 +32,7 @@ optional arguments:
   -sf STARTFILE, --startfile STARTFILE                    .blk start file (included) - default: blk00000.dat
   -ef ENDFILE, --endfile ENDFILE                          .blk end file (excluded) - default: None
   -st STARTTX, --starttx STARTTX                          start transaction id (included) - default: None
-  -et ENDTX, --endtx ENDTX                                end transaction id (excluded) - default: None
+  -et ENDTX, --endtx ENDTX                                end transaction id (included) - default: None
   -ets ENDTS, --endts ENDTS                               end timestamp of block - default: None
   -loc BLKLOCATION, --blklocation BLKLOCATION             .blk|.csv file location - default: ~/.bitcoin/blocks
   -path TARGETPATH, --targetpath TARGETPATH               path to store raw edges locally - default: ./
@@ -48,7 +48,7 @@ optional arguments:
   -ds DATASET, --dataset DATASET                          bigquery data set name - default: btc
   -tid TABLEID, --tableid TABLEID                         bigquery table id - default: bitcoin_transactions
 ```
-If uploading is activated, it is highly recommended to consider the integrated parquet-format conversion before uploading the data to the Google Cloud in order to reduce bandwidth usage. This can easily be done using the  `--parquet` flag. Using parquet format you can boost execution by activating multiprocessing - using the `-mp` flag - and parallely parse and upload block files.
+If uploading is activated, it is highly recommended to consider the integrated parquet-format conversion before uploading the data to the Google Cloud in order to reduce bandwidth usage. This can easily be done using the  `--parquet` flag. Easily boost execution by activating multiprocessing - using the `-mp` flag to parse block files with every available core.
 
 ---
 
