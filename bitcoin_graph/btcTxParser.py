@@ -19,8 +19,8 @@
 import os
 import sys
 import time
+import shutil
 from datetime import datetime
-
 from bitcoin_graph.blockchain_parser.blockchain import Blockchain
 from bitcoin_graph.uploader import Uploader, _print
 from bitcoin_graph.logger import BlkLogger
@@ -129,6 +129,12 @@ class BtcTxParser:
             
             # Loop through all .blk files
             for blk_file in blk_files:
+                
+                # Monitor disk usage in multi-processing mode
+                if self.multi_p:
+                    total, used, _ = shutil.disk_usage("/")
+                    if used/total > 0.8:
+                        time.sleep(100)
                 
                 # Ensure to start with an empty array
                 if not self.use_parquet:
