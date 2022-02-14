@@ -31,7 +31,7 @@ class Uploader():
     # table id: google big query table id, default: btc
     # dataset: specific dataset within table, default: bitcoin_transaction
     def __init__(self, credentials, project, dataset, table_id, path=None, 
-                 logger=None, bucket=None, pthreshold=None, multi_p=False, cores=1):
+                 logger=None, bucket=None, pthreshold=None, multi_p=False, cores=1, loc=None):
         
         # put google credentials into .gcpkey folder
         self.credentials = credentials
@@ -47,6 +47,7 @@ class Uploader():
         self.bucketname      = bucket
         self.multi_p         = multi_p
         self.cores           = cores
+        self.loc             = loc
         try:
             self.path  = path or "output/{}/rawedges".format(get_date())
         except:
@@ -78,7 +79,7 @@ class Uploader():
             return True
         else:
             end = []
-            for file in os.listdir("./.temp/"):
+            for file in os.listdir("{}/.temp/".format(self.loc)):
                 if "end_multiprocessing" in file and file.endswith(".txt"):
                     with open("./.temp/end_multiprocessing.txt", "r") as file:
                         _end = eval(file.read())
@@ -91,10 +92,10 @@ class Uploader():
     
     def upload_parquet_data(self):
         while(self.end_not_yet_reached()):
-            current_file_list = os.listdir(".temp")
+            current_file_list = os.listdir("{}/.temp/".format(self.loc))
             if len(current_file_list) > 1:
                 for file in current_file_list:
-                    file = ".temp/" + file
+                    file = "{}/.temp/".format(self.loc) + file
                     if file.endswith("txt"):
                         continue
                     if datetime.now().timestamp()-os.path.getmtime(file) < 20:
