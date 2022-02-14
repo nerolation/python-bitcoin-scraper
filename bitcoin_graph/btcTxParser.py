@@ -138,7 +138,7 @@ class BtcTxParser:
                     while not check:
                         total, used, _ = shutil.disk_usage("/")
                         if used/total > 0.9:
-                            _print(f"Critical disk usage of {:.2f}%".format(used/total*100))
+                            _print("Critical disk usage of {:.2f}%".format(used/total*100))
                             time.sleep(100)
                         else:
                             check = True
