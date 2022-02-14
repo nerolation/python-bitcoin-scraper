@@ -15,7 +15,7 @@ import os, sys
 import time
 from termcolor import colored
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 __cwd__     = os.path.abspath(os.getcwd())
 
 # print current configuration into console
