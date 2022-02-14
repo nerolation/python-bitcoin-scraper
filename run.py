@@ -158,6 +158,7 @@ if __name__ == '__main__':
         if multi_p:
             if len(processes) > 0:
                 for p in processes:
+                    print("Ending process at PID {:>5}".format(p.pid))
                     p.terminate()
         print("\nKEYBOARD WAS INTERRUPTED")
         print("-----------------------------------------")
