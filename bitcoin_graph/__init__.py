@@ -29,13 +29,14 @@ def starting_info(args):
     if not args["startfile"] or not args["endfile"]:
         files = []
         for file in os.listdir(args["blklocation"]):
-            if file.endswith(".dat") and file.startswith("blk"):
+            if file.endswith(".dat") and "blk" in file:
                 files.append(file)
         sorted(files)
         if not args["startfile"]:
             args["startfile"] = files[0]
         if not args["endfile"]:
             args["endfile"]   = files[-1]
+            
     
     
     if str(args["upload"]) in ["False", "None", "0"]:
