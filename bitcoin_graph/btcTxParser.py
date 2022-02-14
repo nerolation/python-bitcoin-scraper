@@ -106,8 +106,8 @@ class BtcTxParser:
            Arguments: start file `sF`, end file `eF`, start tx `sT` and a end tx `eT`.
         '''
         if process == 1:
-            print("Start parsing...")
             time.sleep(1)
+            print("Start parsing...")
             print_output_header(self)
         
         try:
