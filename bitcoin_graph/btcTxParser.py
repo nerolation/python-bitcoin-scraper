@@ -21,6 +21,7 @@ import sys
 import time
 import shutil
 from datetime import datetime
+import numpy as np
 from bitcoin_graph.blockchain_parser.blockchain import Blockchain
 from bitcoin_graph.uploader import Uploader, _print
 from bitcoin_graph.logger import BlkLogger
