@@ -125,7 +125,7 @@ if __name__ == '__main__':
                 cpu_p = cpus - cpu_u
                 uploader = Uploader(credentials=creds, table_id=table_id, dataset=dataset, 
                                     project=project, logger=BlkLogger(), bucket=bucket, 
-                                    multi_p=multi_p, cores=cpu_p)
+                                    multi_p=multi_p, cores=cpu_p, loc=file_loc)
                 processes.append(Process(target = uploader.upload_parquet_data))
                 
             else:
