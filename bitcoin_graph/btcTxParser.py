@@ -65,7 +65,8 @@ class BtcTxParser:
                                         logger     = self.logger,
                                         pthreshold = self.parq_thres,
                                         bucket     = self.bucket,
-                                        multi_p    = self.multi_p
+                                        multi_p    = self.multi_p,
+                                        loc        = self.dl
                                        ) # BigQuery uploader
 
         # Timestamp to datetime object
