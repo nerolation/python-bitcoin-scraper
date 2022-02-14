@@ -107,6 +107,7 @@ class BtcTxParser:
         '''
         if process == 1:
             print("Start parsing...")
+            time.sleep(1)
             print_output_header(self)
         
         try:
