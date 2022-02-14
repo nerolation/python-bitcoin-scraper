@@ -134,9 +134,14 @@ class BtcTxParser:
                 
                 # Monitor disk usage in multi-processing mode
                 if self.multi_p:
-                    total, used, _ = shutil.disk_usage("/")
-                    if used/total > 0.8:
-                        time.sleep(100)
+                    check = False
+                    while not check:
+                        total, used, _ = shutil.disk_usage("/")
+                        if used/total > 0.9:
+                            _print(f"Critical disk usage of {:.2f}%".format(used/total*100))
+                            time.sleep(100)
+                        else:
+                            check = True
                 
                 # Ensure to start with an empty array
                 if not self.use_parquet:
