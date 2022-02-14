@@ -113,7 +113,7 @@ if __name__ == '__main__':
                 btc_graph.parse(startFile,endFile,startTx,endTx)
 
         else:
-            cpus = 4 #cpu_count()
+            cpus = cpu_count()
             sF = file_number(startFile)
             eF = file_number(endFile)
             r = list(range(sF, eF+1))
