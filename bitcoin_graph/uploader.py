@@ -75,13 +75,13 @@ class Uploader():
     
     def end_not_yet_reached(self):
         ''' Returns `True` if parsing has ended and no more files to upload '''
-        if len(os.listdir(".temp")) > 1:
+        if len(os.listdir("{}/.temp".format(self.loc))) > 1:
             return True
         else:
             end = []
             for file in os.listdir("{}/.temp/".format(self.loc)):
                 if "end_multiprocessing" in file and file.endswith(".txt"):
-                    with open("./.temp/end_multiprocessing.txt", "r") as file:
+                    with open("{}/.temp/end_multiprocessing.txt".format(self.loc), "r") as file:
                         _end = eval(file.read())
                         if _end:
                             end.append(_end)
