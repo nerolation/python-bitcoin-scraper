@@ -139,14 +139,14 @@ class Uploader():
         for col in df.select_dtypes(include="object").columns:
             df[col] = df[col].apply(lambda x:re.sub('[^A-Za-z0-9]+','', str(x)))
 
-        df.to_parquet(".temp/blk_{}.parquet".format(blkfilenr))
-        self.logger.log("Saved .temp/blk_{}.parquet".format(blkfilenr))
+        df.to_parquet("{}/.temp/blk_{}.parquet".format(self.loc,blkfilenr))
+        self.logger.log("Saved {}/.temp/blk_{}.parquet".format(self.loc, blkfilenr))
         if not self.multi_p:
-            current_file_list = os.listdir(".temp")
+            current_file_list = os.listdir("{}/.temp".format(self.loc))
 
             if len(current_file_list) > self.threshold:
                 for file in current_file_list:
-                    file = ".temp/" + file
+                    file = "{}/.temp/".format(self.loc) + file
                     filenr = re.search("([0-9]+)",file).group()
                     bucket = self.storage_client.bucket(self.bucketname)
                     blob = bucket.blob("blk_{}.parquet".format(filenr))
