@@ -81,7 +81,7 @@ class Uploader():
             end = []
             for file in os.listdir("{}/.temp/".format(self.loc)):
                 if "end_multiprocessing" in file and file.endswith(".txt"):
-                    with open("{}/.temp/end_multiprocessing.txt".format(self.loc), "r") as file:
+                    with open("{}/.temp/{}".format(self.loc, file), "r") as file:
                         _end = eval(file.read())
                         if _end:
                             end.append(_end)
