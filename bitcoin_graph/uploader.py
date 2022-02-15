@@ -137,7 +137,7 @@ class Uploader():
         df = pd.DataFrame(rE, columns=cls)
         df["vout"] = df["vout"].astype('int') 
         for col in df.select_dtypes(include="object").columns:
-            df[col] = df[col].apply(lambda x:re.sub('[^A-Za-z0-9]+','', str(x)))
+            df[col] = df[col].apply(lambda x:re.sub('[^A-Za-z0-9_]+','', str(x)))
 
         df.to_parquet("{}/.temp/blk_{}.parquet".format(self.loc,blkfilenr))
         self.logger.log("Saved {}/.temp/blk_{}.parquet".format(self.loc, blkfilenr))
