@@ -240,7 +240,7 @@ class BtcTxParser:
         
         # Create end file for multiprocessing
         if self.multi_p:
-            with open(f"./.temp/end_multiprocessing_{np.random.randint(0,100000000)}.txt", "w") as file:
+            with open("{}/.temp/end_multiprocessing_{}.txt".format(self.dl,np.random.randint(0,100000000)), "w") as file:
                 file.write("True")
                 
         execution_time = int((datetime.now() \
