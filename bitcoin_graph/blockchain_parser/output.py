@@ -15,7 +15,8 @@
 
 from .utils import decode_varint, decode_uint64
 from .script import Script
-from .address import Address, UnknownAddress, OPReturnaddress
+from .address import Address, UnknownAddress, OPReturnAddress, Bech32mAddress
+from .taproot_support import try_taproot
 
 
 class Output(object):
@@ -53,6 +54,7 @@ class Output(object):
         if self._script is None:
             self._script = Script.from_hex(self._script_hex)
         return self._script
+    
 
     @property
     def addresses(self):
@@ -84,11 +86,16 @@ class Output(object):
                 address = Address.from_bech32(self.script.operations[1], 0)
                 self._addresses.append(address)
             elif self.type in ["OP_RETURN"]:
-                opreturnaddress = OPReturnaddress(self.type)
+                opreturnaddress = OPReturnAddress(self.type)
                 self._addresses.append(opreturnaddress)
             elif self.type in ["invalid", "unknown"]:
-                unknownAddress = UnknownAddress(self.type)
-                self._addresses.append(unknownAddress)
+                ret = try_taproot(self.script.value)
+                if type(ret) == str:
+                    bech32maddress = Bech32mAddress(self.script.value, ret)
+                    self._addresses.append(bech32maddress)
+                else:
+                    unknownAddress = UnknownAddress(self.type)
+                    self._addresses.append(unknownAddress)
             else:
                 unknownAddress = UnknownAddress("undefined")
                 self._addresses.append(unknownAddress)
