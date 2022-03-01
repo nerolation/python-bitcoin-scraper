@@ -65,6 +65,7 @@ If uploading is activated, it is highly recommended to consider the integrated p
 - Dummy address for coinbase transaction
 - Supports invalid and unknown scripts + OP_RETURNs
 - Integrated logging
+- **NEW** Taproot Support **NEW**
 
 ## Installing
 
