@@ -95,7 +95,7 @@ def starting_info(args):
             os.makedirs('{}/.temp'.format(args["blklocation"]))
         elif len(os.listdir('{}/.temp'.format(args["blklocation"]))) > 0:
             for tempfile in os.listdir('{}/.temp'.format(args["blklocation"])):
-                os.remove('.{}.temp/'.format(args["blklocation"]+tempfile))
+                os.remove('.{}/.temp/{}'.format(args["blklocation"],tempfile))
             print("\r\r           ")
     for i in range(2):
         for i in ["|", "/", "-", "\\"]:
