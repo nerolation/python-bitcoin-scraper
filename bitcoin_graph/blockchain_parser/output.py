@@ -15,8 +15,7 @@
 
 from .utils import decode_varint, decode_uint64
 from .script import Script
-from .address import Address, UnknownAddress, OPReturnAddress, Bech32mAddress
-from .taproot_support import try_taproot
+from .address import Address, UnknownAddress, OPReturnAddress
 
 
 class Output(object):
@@ -85,17 +84,15 @@ class Output(object):
             elif self.type == "p2wsh":
                 address = Address.from_bech32(self.script.operations[1], 0)
                 self._addresses.append(address)
+            elif self.type == "p2tr":
+                address = Address.from_bech32m(self.script.operations[1], 1)
+                self._addresses.append(address)
             elif self.type in ["OP_RETURN"]:
                 opreturnaddress = OPReturnAddress(self.type)
                 self._addresses.append(opreturnaddress)
             elif self.type in ["invalid", "unknown"]:
-                ret = try_taproot(self.script.value)
-                if type(ret) == str:
-                    bech32maddress = Bech32mAddress(self.script.value, ret)
-                    self._addresses.append(bech32maddress)
-                else:
-                    unknownAddress = UnknownAddress(self.type)
-                    self._addresses.append(unknownAddress)
+                unknownAddress = UnknownAddress(self.type)
+                self._addresses.append(unknownAddress)
             else:
                 unknownAddress = UnknownAddress("undefined")
                 self._addresses.append(unknownAddress)
@@ -126,6 +123,9 @@ class Output(object):
     def is_p2wsh(self):
         return self.script.is_p2wsh()
 
+    def is_p2tr(self):
+        return self.script.is_p2tr()
+
     @property
     def type(self):
         """Returns the output's script type as a string"""
@@ -153,5 +153,8 @@ class Output(object):
 
         if self.is_p2wsh():
             return "p2wsh"
+
+        if self.is_p2tr():
+            return "p2tr"
 
         return "unknown"
