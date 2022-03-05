@@ -1,7 +1,7 @@
-# bitcoin-graph 
+# bitcoin-bitcoin-scraper
 
 
-**Bitcoin-Python-Graph** represents a **command line tool** to parse transactions directly from raw blk files using Python. 
+**Python-Bitcoin-Scraper** is a **command line tool** to parse transactions directly from raw blk*.dat files using Python. 
 
 
 ---
@@ -82,7 +82,7 @@ pip install -r requirements.txt
 [![asciicast](https://asciinema.org/a/458061.svg)](https://asciinema.org/a/458061)
 ---
 
-**Note: Currently it takes about 4 days to parse and upload the complete blockchain!** 
+**Note: Currently it takes about 2 days on my machine to parse and upload the complete blockchain!** 
 
 
 
