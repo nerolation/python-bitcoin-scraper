@@ -19,8 +19,9 @@
 import os
 import sys
 import time
+import shutil
 from datetime import datetime
-
+import numpy as np
 from bitcoin_graph.blockchain_parser.blockchain import Blockchain
 from bitcoin_graph.uploader import Uploader, _print
 from bitcoin_graph.logger import BlkLogger
@@ -64,7 +65,8 @@ class BtcTxParser:
                                         logger     = self.logger,
                                         pthreshold = self.parq_thres,
                                         bucket     = self.bucket,
-                                        multi_p    = self.multi_p
+                                        multi_p    = self.multi_p,
+                                        loc        = self.dl
                                        ) # BigQuery uploader
 
         # Timestamp to datetime object
@@ -130,6 +132,17 @@ class BtcTxParser:
             
             # Loop through all .blk files
             for blk_file in blk_files:
+                
+                # Monitor disk usage in multi-processing mode
+                if self.multi_p:
+                    check = False
+                    while not check:
+                        total, used, _ = shutil.disk_usage("/")
+                        if used/total > 0.9:
+                            _print("Critical disk usage of {:.2f}%".format(used/total*100))
+                            time.sleep(100)
+                        else:
+                            check = True
                 
                 # Ensure to start with an empty array
                 if not self.use_parquet:
@@ -240,7 +253,7 @@ class BtcTxParser:
         
         # Create end file for multiprocessing
         if self.multi_p:
-            with open("{}/.temp/end_multiprocessing_{}.txt".format(self.dl,np.random.randint(0,100000000)), "w") as file:
+            with open(f"{self.dl}/../.temp/end_multiprocessing_{np.random.randint(0,100000000)}.txt", "w") as file:
                 file.write("True")
                 
         execution_time = int((datetime.now() \
