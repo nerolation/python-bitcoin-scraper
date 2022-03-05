@@ -75,13 +75,13 @@ class Uploader():
     
     def end_not_yet_reached(self):
         ''' Returns `True` if parsing has ended and no more files to upload '''
-        if len(os.listdir("{}/.temp".format(self.loc))) > 1:
+        if len(os.listdir("{}/../.temp".format(self.loc))) > 1:
             return True
         else:
             end = []
-            for file in os.listdir("{}/.temp/".format(self.loc)):
+            for file in os.listdir("{}/../.temp/".format(self.loc)):
                 if "end_multiprocessing" in file and file.endswith(".txt"):
-                    with open("{}/.temp/{}".format(self.loc, file), "r") as file:
+                    with open("{}/../.temp/{}".format(self.loc, file), "r") as file:
                         _end = eval(file.read())
                         if _end:
                             end.append(_end)
@@ -92,10 +92,10 @@ class Uploader():
     
     def upload_parquet_data(self):
         while(self.end_not_yet_reached()):
-            current_file_list = os.listdir("{}/.temp/".format(self.loc))
+            current_file_list = os.listdir("{}/../.temp/".format(self.loc))
             if len(current_file_list) > 1:
                 for file in current_file_list:
-                    file = "{}/.temp/".format(self.loc) + file
+                    file = "{}/../.temp/".format(self.loc) + file
                     if file.endswith("txt"):
                         continue
                     if datetime.now().timestamp()-os.path.getmtime(file) < 20:
@@ -139,14 +139,14 @@ class Uploader():
         for col in df.select_dtypes(include="object").columns:
             df[col] = df[col].apply(lambda x:re.sub('[^A-Za-z0-9_]+','', str(x)))
 
-        df.to_parquet("{}/.temp/blk_{}.parquet".format(self.loc,blkfilenr))
-        self.logger.log("Saved {}/.temp/blk_{}.parquet".format(self.loc, blkfilenr))
+        df.to_parquet("{}/../.temp/blk_{}.parquet".format(self.loc,blkfilenr))
+        self.logger.log("Saved {}/../.temp/blk_{}.parquet".format(self.loc, blkfilenr))
         if not self.multi_p:
-            current_file_list = os.listdir("{}/.temp".format(self.loc))
+            current_file_list = os.listdir("{}/../.temp".format(self.loc))
 
             if len(current_file_list) > self.threshold:
                 for file in current_file_list:
-                    file = "{}/.temp/".format(self.loc) + file
+                    file = "{}/../.temp/".format(self.loc) + file
                     filenr = re.search("([0-9]+)",file).group()
                     bucket = self.storage_client.bucket(self.bucketname)
                     blob = bucket.blob("blk_{}.parquet".format(filenr))
