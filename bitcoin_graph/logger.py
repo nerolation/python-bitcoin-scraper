@@ -13,12 +13,13 @@
 
 import os
 from datetime import datetime
+from .helpers import _print
 
 # Logger object
 class BlkLogger:
     def __init__(self):
         if not os.path.isdir('logs/'):
-            _print("Creating logs folder...")
+            _print("Creating logs folder ...\n")
             os.makedirs('logs')
 
     def log(self, s):
