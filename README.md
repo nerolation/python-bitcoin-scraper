@@ -25,7 +25,7 @@ By default the following columns are collected:
 ## Usage
 
 ```console
-$ python3 run.py -loc ./data --collectvalue --collectblk --upload --parquet --multiprocessing
+$ python3 run.py -c <CREDENTIALS> -loc <BLK.DAT-LOCATION> --collectvalue --collectblk --upload --parquet --multiprocessing
 
 optional arguments:
   -h, --help                                              show this help message and exit
@@ -34,17 +34,17 @@ optional arguments:
   -st STARTTX, --starttx STARTTX                          start transaction id (included) - default: None
   -et ENDTX, --endtx ENDTX                                end transaction id (included) - default: None
   -ets ENDTS, --endts ENDTS                               end timestamp of block - default: None
-  -loc BLKLOCATION, --blklocation BLKLOCATION             .blk|.csv file location - default: ~/.bitcoin/blocks
+  -loc BLKLOCATION, --blklocation BLKLOCATION             blk.dat file location - default: ~/.bitcoin/blocks
   -path TARGETPATH, --targetpath TARGETPATH               path to store raw edges locally - default: ./
-  -collectvalue, --collectvalue                           collect output values - default: No
-  -collectblk, --collectblk                               collect blk file numbers with every edge - default: No
-  -upload, --upload                                       upload edges to google bigquery - default: False
-  -parquet, --parquet                                     use parquet format - default: False
+  -cv, --collectvalue                                     collect output values - default: No
+  -cb, --collectblk                                       collect blk file numbers with every edge - default: No
+  -up, --upload                                           upload edges to google bigquery - default: False
+  -parq, --parquet                                        use parquet format - default: False
   -mp, --multiprocessing                                  use multiprocessing - default: False
   -ut UPLOADTHRESHOLD, --uploadthreshold UPLOADTHRESHOLD  uploading threshold for parquet files - default: 5
-  -bucket BUCKET, --bucket BUCKET                         bucket name to store parquet files - default: btc_<timestamp>
+  -b BUCKET, --bucket BUCKET                              bucket name to store parquet files - default: btc_<timestamp>
   -c CREDENTIALS, --credentials CREDENTIALS               path to google credentials (.*json)- default: ./.gcpkey/.*json
-  -project PROJECT, --project PROJECT                     google cloud project name - default: btcgraph
+  -p PROJECT, --project PROJECT                           google cloud project name - default: btcgraph
   -ds DATASET, --dataset DATASET                          bigquery data set name - default: btc
   -tid TABLEID, --tableid TABLEID                         bigquery table id - default: bitcoin_transactions
 ```
@@ -65,7 +65,7 @@ If uploading is activated, it is highly recommended to consider the integrated p
 - Dummy address for coinbase transaction
 - Supports invalid and unknown scripts + OP_RETURNs
 - Integrated logging
-- **NEW** Taproot Support **NEW**
+- **NEW** Taproot Addresses Support **NEW**
 
 ## Installing
 
