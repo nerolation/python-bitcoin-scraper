@@ -35,8 +35,8 @@ parser.add_argument('-loc', '--blklocation', help=".blk|.csv file location - def
 
 # Raw edge-list
 parser.add_argument('-path', '--targetpath', help="path to store raw edges locally - default: ./", default="./")
-parser.add_argument('-collectvalue', '--collectvalue', help="collect output values - default: No", action='store_true')
-parser.add_argument('-collectblk', '--collectblk', help="collect blk file numbers with every edge - default: No", action='store_true')
+parser.add_argument('-cv', '--collectvalue', help="collect output values - default: No", action='store_true')
+parser.add_argument('-cb', '--collectblk', help="collect blk file numbers with every edge - default: No", action='store_true')
 
 # Uploader
 if os.path.isdir(".gcpkey") and len(os.listdir(".gcpkey")) > 0:
@@ -45,10 +45,10 @@ else:
     creds = None
 
 # Direct upload
-parser.add_argument('-upload', '--upload', help="upload edges to google bigquery - default: False",  action='store_true')
+parser.add_argument('-up', '--upload', help="upload edges to google bigquery - default: False",  action='store_true')
 
 # Use Parquet format
-parser.add_argument('-parquet', '--parquet', help="use parquet format - default: False",  action='store_true')
+parser.add_argument('-parq', '--parquet', help="use parquet format - default: False",  action='store_true')
 
 # Use Multiprocessing
 parser.add_argument('-mp', '--multiprocessing', help="use multiprocessing - default: False",  action='store_true')
@@ -57,11 +57,11 @@ parser.add_argument('-mp', '--multiprocessing', help="use multiprocessing - defa
 parser.add_argument('-ut', '--uploadthreshold', help="uploading threshold for parquet files - default: 5",  default=5)
 
 # Bucket name
-parser.add_argument('-bucket', '--bucket', help="bucket name to store parquet files - default: btc_<timestamp>",  default="btc_{}".format(int(datetime.now().timestamp())))
+parser.add_argument('-b', '--bucket', help="bucket name to store parquet files - default: btc_<timestamp>",  default="btc_{}".format(int(datetime.now().timestamp())))
 
 # Upload configurations (if direct upload or uploading existing files)
 parser.add_argument('-c', '--credentials', help="path to google credentials (.*json)- default: ./.gcpkey/.*json", default=creds)
-parser.add_argument('-project', '--project', help="google cloud project name - default: btcgraph", default="btcgraph")
+parser.add_argument('-p', '--project', help="google cloud project name - default: btcgraph", default="btcgraph")
 parser.add_argument('-ds', '--dataset', help="bigquery data set name - default: btc", default="btc")
 parser.add_argument('-tid', '--tableid', help="bigquery table id - default: bitcoin_transactions", default="bitcoin_transactions")
 
@@ -145,13 +145,13 @@ if __name__ == '__main__':
                 start = "blk{}.dat".format(str(list(pack[i])[0]).zfill(5))
                 end   = "blk{}.dat".format(str(list(pack[i])[-1]).zfill(5))
                 processes.append(Process(target = btc_graph.parse, args=(start,end,startTx,endTx, i)))
-                
-            
-            
+
+
+
             for p in processes:
                 p.start()
                 print("Starting process at PID {:>5}".format(p.pid))
-                
+ 
             connection.wait(p.sentinel for p in processes)
     # Crtl + C to end execution
     except KeyboardInterrupt:
