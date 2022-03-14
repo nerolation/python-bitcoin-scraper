@@ -25,7 +25,7 @@ By default the following columns are collected:
 ## Usage
 
 ```console
-$ python3 run.py -c <CREDENTIALS> -loc <BLK.DAT-LOCATION> --collectvalue --collectblk --upload --parquet --multiprocessing
+$ python3 run.py -loc ./data -cv -cb -up -tid test_table -parq -mp
 
 optional arguments:
   -h, --help                                              show this help message and exit
