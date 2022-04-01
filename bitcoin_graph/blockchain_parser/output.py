@@ -134,16 +134,16 @@ class Output(object):
             return "invalid"
 
         if self.is_pubkeyhash():
-            return "pubkeyhash"
+            return "p2pkh"
 
         if self.is_pubkey():
-            return "pubkey"
+            return "p2pk"
 
         if self.is_p2sh():
             return "p2sh"
 
         if self.is_multisig():
-            return "multisig"
+            return "p2ms"
 
         if self.is_return():
             return "OP_RETURN"
