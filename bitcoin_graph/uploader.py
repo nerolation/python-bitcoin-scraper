@@ -69,6 +69,7 @@ class Uploader():
         cls = ["ts", "tx_id", "input_tx_id", "vout", "output_to", "output_index"]
         if cvalue:
             cls.append("value")
+        cls.append("script_type")
         if cblk:
             cls.append("blk_file_nr")
         return cls

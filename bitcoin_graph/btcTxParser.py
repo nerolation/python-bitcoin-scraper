@@ -76,7 +76,7 @@ class BtcTxParser:
         print("Btc Tx-Parser successfully initialized")
     
     
-    def _buildEdge(self, u, v, values):
+    def _buildEdge(self, u, v, values, scripts):
         '''Build edge by looping over the inputs `u` and the outputs `v`
            and creating edges with every combination.
         '''
@@ -90,7 +90,8 @@ class BtcTxParser:
                                            _u, 
                                            _v, 
                                            _index, 
-                                           values[_index]))
+                                           values[_index],
+                                           scripts[_index]))
 
                 # ...no values    
                 else:
@@ -205,14 +206,16 @@ class BtcTxParser:
                             # Outputs and Values
                             Outs = []
                             Vals = []
+                            Scpt = []
                             for output in tx.outputs:
                                 # Multisigs might contain multiple addresses
                                 for address in output.addresses:
                                     Outs.append(address.address)
                                     Vals.append(output.value)
+                                    Scpt.append(output.type)
 
                             # Build edge
-                            self._buildEdge(Vins, Outs, Vals)
+                            self._buildEdge(Vins, Outs, Vals, Scpt)
                 
                 if start:
                     if not self.use_parquet:

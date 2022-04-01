@@ -132,6 +132,7 @@ def get_table_schema(cls, cblk, cvalue):
         ]
     if cvalue:
         c.append({'name': '{}'.format("value"), 'type': 'INTEGER'})
+        c.append({'name': '{}'.format("script_type"), 'type': 'STRING'})
     if cblk:
         c.append({'name': '{}'.format("blk_file_nr"), 'type': 'INTEGER'})
         
