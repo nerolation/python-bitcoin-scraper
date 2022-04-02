@@ -84,7 +84,7 @@ def starting_info(args):
             v = colored("deactivated", "red")
         elif str(v) == "None":
             v = colored("deactivated", "red")
-        elif str(v) in ["True", "1"]:
+        elif str(v) in ["True", "1"] and k != "uploadthreshold":
             v = colored("activated", "green")
 
         print("{:<25}{:<13}".format(k+":", str(v)))
