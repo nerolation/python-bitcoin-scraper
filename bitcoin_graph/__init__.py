@@ -37,7 +37,8 @@ def starting_info(args):
         if not args["endfile"]:
             args["endfile"]   = files[-1]
             
-    
+    if type(args["uploadthreshold"]) != int:
+        args["uploadthreshold"] = int(args["uploadthreshold"])
     
     if str(args["upload"]) in ["False", "None", "0"]:
         args["credentials"] = colored("deactivated", "red")
