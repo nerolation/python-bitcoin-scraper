@@ -62,17 +62,17 @@ class Output(object):
         """
         if self._addresses is None:
             self._addresses = []
-            if self.type == "pubkey":
+            if self.type == "p2pk":
                 address = Address.from_public_key(self.script.operations[0])
                 self._addresses.append(address)
-            elif self.type == "pubkeyhash":
+            elif self.type == "p2pkh":
                 address = Address.from_ripemd160(self.script.operations[2])
                 self._addresses.append(address)
             elif self.type == "p2sh":
                 address = Address.from_ripemd160(self.script.operations[1],
                                                  type="p2sh")
                 self._addresses.append(address)
-            elif self.type == "multisig":
+            elif self.type == "p2ms":
                 n = self.script.operations[-2]
                 for operation in self.script.operations[1:1+n]:
                     self._addresses.append(Address.from_public_key(operation))
