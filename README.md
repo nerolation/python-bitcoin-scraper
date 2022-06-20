@@ -1,4 +1,4 @@
-# bitcoin-bitcoin-scraper
+# Python-bitcoin-scraper
 
 
 **Python-Bitcoin-Scraper** is a **command line tool** to parse transactions directly from raw blk*.dat files using Python. 
@@ -76,6 +76,20 @@ Install dependencies contained in `requirements.txt`:
 ```
 pip install -r requirements.txt
 ```
+
+
+### Cite as
+```
+@misc{Wahrstaetter2022,
+	title = {Bitcoin-bitcoin-scraper},
+	url = {https://github.com/Nerolation/python-bitcoin-scraper},
+	urldate = {2022-06-20},
+	publisher = {Github},
+	author = {Anton Wahrstätter},
+	year = {2022},
+}
+```
+
 
 
 ## Examples
