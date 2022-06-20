@@ -81,7 +81,7 @@ pip install -r requirements.txt
 ### Cite as
 ```
 @misc{Wahrstaetter2022,
-	title = {Bitcoin-bitcoin-scraper},
+	title = {Python-bitcoin-scraper},
 	url = {https://github.com/Nerolation/python-bitcoin-scraper},
 	urldate = {2022-06-20},
 	publisher = {Github},
